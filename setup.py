@@ -18,14 +18,14 @@ for root, dirs, files in os.walk(".", topdown=False):
 # build "pycsdk.so" python extension to be added to "PYTHONPATH" afterwards...
 setup(
     name='pycsdk',
-    version='20.2.20',
+    version='20.3.0',
     cmdclass = {'build_ext': build_ext},
     ext_modules = [
         Extension("pycsdk",
                   sources=["pycsdk.pyx"],
                   libraries=["kernelapi", "recpdf", "recapiplus"],
-                  extra_compile_args=["-I/usr/local/include/nuance-omnipage-csdk-20.2", "-O2"],
-                  extra_link_args=["-L/usr/local/lib/nuance-omnipage-csdk-lib64-20.2"]
+                  extra_compile_args=["-I/usr/local/include/nuance-omnipage-csdk-20.3", "-O2"],
+                  extra_link_args=["-L/usr/local/lib/nuance-omnipage-csdk-lib64-20.3"]
              )
         ]
 )
