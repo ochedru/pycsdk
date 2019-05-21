@@ -176,8 +176,12 @@ lang_dict[LANG_HEB] = 'LANG_HEB'
 
 class CSDKException(Exception):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, api_function, rc, err_sym, error_kind):
+        super().__init__('OmniPage: {} returned error {:08x}: {} ({})'.format(api_function, rc, err_sym, error_kind))
+        self.api_function = api_function
+        self.rc = rc
+        self.err_sym = err_sym
+        self.error_kind = error_kind
 
 
 cdef class CSDK:
@@ -209,8 +213,7 @@ cdef class CSDK:
                 local_data.warnings.append('OmniPage: {} returned warning {:08x}: {}'.format(api_function, rc, err_sym))
             else:
                 error_kind = switcher.get(err_info, 'UNKNOWN_{}'.format(err_info))
-                raise CSDKException(
-                    'OmniPage: {} returned error {:08x}: {} ({})'.format(api_function, rc, err_sym, error_kind))
+                raise CSDKException(api_function, rc, err_sym, error_kind)
 
     @staticmethod
     def warnings():
