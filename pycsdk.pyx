@@ -6,20 +6,14 @@ from cpython.ref cimport PyObject
 from cpython.float cimport PyFloat_FromDouble
 from PIL import Image
 from pprint import pformat
-from threading import RLock, local
 from contextlib import contextmanager
 from datetime import datetime
 
 
 cdef extern from "Python.h":
     cdef int PyUnicode_2BYTE_KIND "PyUnicode_2BYTE_KIND"
-    PyObject* PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
-    PyObject* PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
-
-csdk_lock = RLock()
-nb_csdk_instances = 0
-local_data = local()
-
+    PyObject*PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
+    PyObject*PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
 
 class TwoWayDict(dict):
     def __setitem__(self, key, value):
@@ -177,16 +171,18 @@ lang_dict[LANG_HEB] = 'LANG_HEB'
 class CSDKException(Exception):
 
     def __init__(self, msg=None, api_function=None, rc=None, err_sym=None, error_kind=None):
-        super().__init__(msg if msg else 'OmniPage: {} returned error {:08x}: {} ({})'.format(api_function, rc, err_sym, error_kind))
+        super().__init__(
+            msg if msg else 'OmniPage: {} returned error {:08x}: {} ({})'.format(api_function, rc, err_sym, error_kind))
         self.api_function = api_function
         self.rc = rc
         self.err_sym = err_sym
         self.error_kind = error_kind
 
 
+warnings = list()
+
 cdef class CSDK:
     cdef int sid
-    cdef int initialized
 
     @staticmethod
     def check_err(rc, api_function):
@@ -208,32 +204,22 @@ cdef class CSDK:
             }
             err_info = kRecGetErrorInfo(rc, &err_sym)
             if err_info == RET_WARNING:
-                if not hasattr(local_data, 'warnings'):
-                    local_data.warnings = []
-                local_data.warnings.append('OmniPage: {} returned warning {:08x}: {}'.format(api_function, rc, err_sym))
+                warnings.append('OmniPage: {} returned warning {:08x}: {}'.format(api_function, rc, err_sym))
             else:
                 error_kind = switcher.get(err_info, 'UNKNOWN_{}'.format(err_info))
                 raise CSDKException(api_function=api_function, rc=rc, err_sym=err_sym, error_kind=error_kind)
 
     @staticmethod
     def warnings():
-        result = []
-        if hasattr(local_data, 'warnings'):
-            result = local_data.warnings
-            del local_data.warnings
-        return result
+        global warnings
+        result = warnings
+        warnings = list()
 
     def __cinit__(self, company_name, product_name, license_file=None, code=None):
-        global nb_csdk_instances
         self.sid = -1
-        self.initialized = 0
-        with csdk_lock:
-            if nb_csdk_instances == 0:
-                if license_file is not None and code is not None:
-                    CSDK.check_err(kRecSetLicense(license_file, code), 'kRecSetLicense')
-                CSDK.check_err(RecInitPlus(company_name, product_name), 'RecInitPlus')
-            nb_csdk_instances += 1
-        self.initialized = 1
+        if license_file is not None and code is not None:
+            CSDK.check_err(kRecSetLicense(license_file, code), 'kRecSetLicense')
+        CSDK.check_err(RecInitPlus(company_name, product_name), 'RecInitPlus')
 
         # create a settings collection for this CSDK instance
         self.sid = kRecCreateSettingsCollection(-1)
@@ -244,14 +230,9 @@ cdef class CSDK:
         self.set_setting('Kernel.DTxt.txt.LineBreak', '\n')
 
     def __dealloc__(self):
-        global nb_csdk_instances
         if self.sid != -1:
             CSDK.check_err(kRecDeleteSettingsCollection(self.sid), 'kRecDeleteSettingsCollection')
-        if self.initialized != 0:
-            with csdk_lock:
-                nb_csdk_instances -= 1
-                if nb_csdk_instances == 0:
-                    CSDK.check_err(RecQuitPlus(), 'RecQuitPlus')
+        CSDK.check_err(RecQuitPlus(), 'RecQuitPlus')
 
     def __enter__(self):
         return self
@@ -448,11 +429,13 @@ cdef build_letter(LETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
     cdef WCHAR*pCode = &letter.code
     code = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pCode, 1)
     if letter.cntChoices > 1:
-        choices = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pChoices + letter.ndxChoices, letter.cntChoices - 1)
+        choices = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pChoices + letter.ndxChoices,
+                                                     letter.cntChoices - 1)
     else:
         choices = ''
     if letter.cntSuggestions > 1:
-        suggestions = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pSuggestions + letter.ndxSuggestions, letter.cntSuggestions - 1)
+        suggestions = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pSuggestions + letter.ndxSuggestions,
+                                                         letter.cntSuggestions - 1)
     else:
         suggestions = ''
     nb_spaces = None
@@ -601,6 +584,7 @@ class ImageInfo:
 
     def __repr__(self):
         return pformat(vars(self))
+
 
 @contextmanager
 def _timing(timings, name):
@@ -839,14 +823,17 @@ cdef class Page:
         if img_info.BitsPerPixel == 1:
             image = Image.frombytes('1', (img_info.BytesPerLine * 8, img_info.Size.cy), bytes, 'raw', '1;I', 0, 1)
         elif img_info.BitsPerPixel == 8 and img_info.IsPalette == 0:
-            image = Image.frombytes('L', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'L', img_info.BytesPerLine, 1)
+            image = Image.frombytes('L', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'L', img_info.BytesPerLine,
+                                    1)
         elif img_info.BitsPerPixel == 8 and img_info.IsPalette == 1:
-            image = Image.frombytes('P', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'P', img_info.BytesPerLine, 1)
+            image = Image.frombytes('P', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'P', img_info.BytesPerLine,
+                                    1)
             o = PyBytes_FromStringAndSize(<const char*> palette, sizeof(palette))
             palette_bytes = <object> o
             image.putpalette(palette_bytes)
         elif img_info.BitsPerPixel == 24:
-            image = Image.frombytes('RGB', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'RGB', img_info.BytesPerLine, 1)
+            image = Image.frombytes('RGB', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'RGB',
+                                    img_info.BytesPerLine, 1)
         else:
             raise CSDKException(msg='OmniPage: unsupported number of bits per pixel: {}'.format(img_info.BitsPerPixel))
         return image
