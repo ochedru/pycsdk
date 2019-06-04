@@ -1,4 +1,4 @@
-# cython: c_string_type=str, c_string_encoding=ascii
+# cython: language_level=3, boundscheck=True, nonecheck=True, c_string_type=str, c_string_encoding=ascii
 
 import os
 import tempfile
@@ -12,8 +12,8 @@ from datetime import datetime
 
 cdef extern from "Python.h":
     cdef int PyUnicode_2BYTE_KIND "PyUnicode_2BYTE_KIND"
-    PyObject*PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
-    PyObject*PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
+    PyObject* PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
+    PyObject* PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
 
 class TwoWayDict(dict):
     def __setitem__(self, key, value):
@@ -269,12 +269,12 @@ cdef class CSDK:
         CSDK.check_err(kRecSettingGetHandle(NULL, setting_name, &setting, &hasSetting), 'kRecSettingGetHandle')
         if hasSetting == 0:
             raise CSDKException(msg='OmniPage: unknown setting "{}"'.format(setting_name))
-        cdef const WCHAR*setting_value
+        cdef const WCHAR* setting_value
         CSDK.check_err(kRecSettingGetUString(self.sid, setting, &setting_value), 'kRecSettingGetUString');
         length = 0
         while setting_value[length] != 0:
             length += 1
-        cdef PyObject*o = PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, setting_value, length)
+        cdef PyObject* o = PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, setting_value, length)
         return <object> o
 
     def set_language(self, lang_code):
@@ -426,7 +426,7 @@ class Letter:
 cdef build_letter(LETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
     if letter.code == 0x0fffd:  # UNICODE_REJECTED
         return None
-    cdef WCHAR*pCode = &letter.code
+    cdef WCHAR* pCode = &letter.code
     code = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pCode, 1)
     if letter.cntChoices > 1:
         choices = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pChoices + letter.ndxChoices,
@@ -477,10 +477,8 @@ cdef build_letter(LETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
     elif letter.makeup & 0x0200 == 0x0200:
         orientation = 'R_LEFTTEXT'
     rtl = True if letter.makeup & 0x0400 else False
-    lang = letter.lang
-    lang = lang_dict[lang] if lang in lang_dict else None
-    lang2 = letter.lang2
-    lang2 = lang_dict[lang2] if lang2 in lang_dict else None
+    lang = lang_dict.get(letter.lang, None)
+    lang2 = lang_dict.get(letter.lang2, None)
     dictionary_word = True if letter.info & 0x40000000 else False
     return Letter(letter.top, letter.left, letter.top + letter.height, letter.left + letter.width,
                   letter.capHeight * 100.0 / dpi,
@@ -807,7 +805,7 @@ cdef class Page:
         cdef RECERR rc
         cdef IMG_INFO img_info
         cdef LPBYTE bitmap
-        cdef PyObject *o
+        cdef PyObject* o
         cdef BYTE[768] palette
         cdef IMAGEINDEX img_index = image_index
         with nogil:
