@@ -280,15 +280,13 @@ cdef class CSDK:
     def set_language(self, lang_code):
         cdef RECERR rc
         cdef LANGUAGES lang = lang_code
-        with nogil:
-            rc = kRecManageLanguages(self.sid, SET_LANG, lang)
+        rc = kRecManageLanguages(self.sid, SET_LANG, lang)
         CSDK.check_err(rc, 'kRecManageLanguages')
 
     def add_language(self, lang_code):
         cdef RECERR rc
         cdef LANGUAGES lang = lang_code
-        with nogil:
-            rc = kRecManageLanguages(self.sid, ADD_LANG, lang)
+        rc = kRecManageLanguages(self.sid, ADD_LANG, lang)
         CSDK.check_err(rc, 'kRecManageLanguages')
 
     @staticmethod
@@ -327,23 +325,20 @@ cdef class File:
             mode = 0  # IMGF_READ
             format = FF_TIFNO  # 0, not used
             self.read_only = True
-        with nogil:
-            rc = kRecOpenImgFile(pFilePath, &self.handle, mode, format)
+        rc = kRecOpenImgFile(pFilePath, &self.handle, mode, format)
         CSDK.check_err(rc, 'kRecOpenImgFile')
         cdef int n
         if write_pdf:
             n = 0
         else:
-            with nogil:
-                rc = kRecGetImgFilePageCount(self.handle, &n)
+            rc = kRecGetImgFilePageCount(self.handle, &n)
             CSDK.check_err(rc, 'kRecGetImgFilePageCount')
         self.nb_pages = n
 
     def close(self):
         cdef RECERR rc
         if self.handle != NULL:
-            with nogil:
-                rc = kRecCloseImgFile(self.handle)
+            rc = kRecCloseImgFile(self.handle)
             CSDK.check_err(rc, 'kRecCloseImgFile')
         self.handle = NULL
 
@@ -375,14 +370,11 @@ cdef class File:
         try:
             with tf:
                 image.save(tf, format)
-            with nogil:
-                rc = kRecLoadImgF(self.sdk.sid, pFilePath, &hPage, 0)
+            rc = kRecLoadImgF(self.sdk.sid, pFilePath, &hPage, 0)
             CSDK.check_err(rc, 'kRecLoadImgF')
-            with nogil:
-                rc = kRecSaveImg(self.sdk.sid, self.handle, FF_PDF, hPage, II_ORIGINAL, 1)
+            rc = kRecSaveImg(self.sdk.sid, self.handle, FF_PDF, hPage, II_ORIGINAL, 1)
             CSDK.check_err(rc, 'kRecSaveImg')
-            with nogil:
-                rc = kRecFreeImg(hPage)
+            rc = kRecFreeImg(hPage)
             CSDK.check_err(rc, 'kRecFreeImg')
         finally:
             os.unlink(tf.name)
@@ -605,18 +597,15 @@ cdef class Page:
         self.sdk = file.sdk
         self.page_id = page_id
         self.handle = NULL
-        cdef RECERR rc
         cdef int iPage = page_id
-        with nogil:
-            rc = kRecLoadImg(self.sdk.sid, file.handle, &self.handle, iPage)
+        cdef RECERR rc = kRecLoadImg(self.sdk.sid, file.handle, &self.handle, iPage)
         CSDK.check_err(rc, 'kRecLoadImg')
 
     def close(self):
         cdef RECERR rc
         if self.handle != NULL:
             # free image and recognition data
-            with nogil:
-                rc = kRecFreeImg(self.handle)
+            rc = kRecFreeImg(self.handle)
             CSDK.check_err(rc, 'kRecFreeImg')
         self.handle = NULL
 
@@ -632,23 +621,20 @@ cdef class Page:
     @property
     def camera_image(self):
         cdef INTBOOL flag;
-        with nogil:
-            rc = kRecGetImgFlags(self.handle, IMG_FLAGS_CAMERAIMAGE, &flag)
+        cdef RECERR rc = kRecGetImgFlags(self.handle, IMG_FLAGS_CAMERAIMAGE, &flag)
         CSDK.check_err(rc, 'kRecGetImgFlags')
         return True if flag != 0 else False
 
     @camera_image.setter
     def camera_image(self, value):
         cdef INTBOOL flag = value;
-        with nogil:
-            rc = kRecSetImgFlags(self.handle, IMG_FLAGS_CAMERAIMAGE, flag)
+        cdef RECERR rc = kRecSetImgFlags(self.handle, IMG_FLAGS_CAMERAIMAGE, flag)
         CSDK.check_err(rc, 'kRecSetImgFlags')
 
     def pre_process(self, timings = dict()):
         cdef RECERR rc
         with _timing(timings, 'ocr_preprocess_image'):
-            with nogil:
-                rc = kRecPreprocessImg(self.sdk.sid, self.handle)
+            rc = kRecPreprocessImg(self.sdk.sid, self.handle)
             CSDK.check_err(rc, 'kRecPreprocessImg')
 
     def rotate(self, rotation, timings=dict()):
@@ -656,8 +642,7 @@ cdef class Page:
         cdef IMG_ROTATE img_rotate
         with _timing(timings, 'ocr_rotate_image'):
             img_rotate = rotation
-            with nogil:
-                rc = kRecRotateImg(self.sdk.sid, self.handle, img_rotate)
+            rc = kRecRotateImg(self.sdk.sid, self.handle, img_rotate)
             CSDK.check_err(rc, 'kRecRotateImg')
 
     def despeckle(self, despeckle_method, despeckle_level=None, timings=dict()):
@@ -667,18 +652,15 @@ cdef class Page:
         with _timing(timings, 'ocr_despeckle_image'):
             method = despeckle_method
             level = despeckle_level if despeckle_level else 0
-            with nogil:
-                rc = kRecForceDespeckleImg(self.sdk.sid, self.handle, NULL, method, level)
+            rc = kRecForceDespeckleImg(self.sdk.sid, self.handle, NULL, method, level)
             # despeckle fails if current image is not black and white: ignore IMG_BITSPERPIXEL_ERR
             if rc != 0x8004C708:
                 CSDK.check_err(rc, 'kRecForceDespeckleImg')
 
     @property
     def preproc_info(self):
-        cdef RECERR rc
         cdef PREPROC_INFO preproc_info;
-        with nogil:
-            rc = kRecGetPreprocessInfo(self.handle, &preproc_info)
+        cdef RECERR rc = kRecGetPreprocessInfo(self.handle, &preproc_info)
         CSDK.check_err(rc, 'kRecGetPreprocessInfo')
         matrix = list()
         for i in range(0, 8):
@@ -711,22 +693,19 @@ cdef class Page:
     def locate_zones(self, timings=dict()):
         cdef RECERR rc
         with _timing(timings, 'ocr_locate_zones'):
-            with nogil:
-                rc = kRecLocateZones(self.sdk.sid, self.handle)
+            rc = kRecLocateZones(self.sdk.sid, self.handle)
             CSDK.check_err(rc, 'kRecLocateZones')
 
     def remove_rule_lines(self, timings=dict()):
         cdef RECERR rc
         with _timing(timings, 'ocr_remove_rule_lines'):
-            with nogil:
-                rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
+            rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
             CSDK.check_err(rc, 'kRecRemoveLines')
 
     def recognize(self, timings=dict()):
         cdef RECERR rc
         with _timing(timings, 'ocr_recognize'):
-            with nogil:
-                rc = kRecRecognize(self.sdk.sid, self.handle, NULL)
+            rc = kRecRecognize(self.sdk.sid, self.handle, NULL)
             CSDK.check_err(rc, 'kRecRecognize')
 
         # retrieve OCR zones
@@ -735,24 +714,19 @@ cdef class Page:
         cdef ZONE zone
         cdef CELL_INFO cell
         with _timing(timings, 'ocr_get_zones'):
-            with nogil:
-                rc = kRecCopyOCRZones(self.handle)
+            rc = kRecCopyOCRZones(self.handle)
             CSDK.check_err(rc, 'kRecCopyOCRZones')
-            with nogil:
-                rc = kRecGetZoneCount(self.handle, &nb_zones)
+            rc = kRecGetZoneCount(self.handle, &nb_zones)
             CSDK.check_err(rc, 'kRecGetZoneCount')
             self.zones = []
             for zone_id in range(nb_zones):
-                with nogil:
-                    rc = kRecGetZoneInfo(self.handle, II_CURRENT, &zone, zone_id)
+                rc = kRecGetZoneInfo(self.handle, II_CURRENT, &zone, zone_id)
                 CSDK.check_err(rc, 'kRecGetZoneInfo')
                 cells = []
-                with nogil:
-                    rc = kRecGetCellCount(self.handle, zone_id, &nb_cells)
+                rc = kRecGetCellCount(self.handle, zone_id, &nb_cells)
                 CSDK.check_err(rc, 'kRecGetCellCount')
                 for cell_id in range(nb_cells):
-                    with nogil:
-                        rc = kRecGetCellInfo(self.handle, II_CURRENT, zone_id, cell_id, &cell)
+                    rc = kRecGetCellInfo(self.handle, II_CURRENT, zone_id, cell_id, &cell)
                     CSDK.check_err(rc, 'kRecGetCellInfo')
                     cells.append(build_cell(cell))
                 self.zones.append(build_zone(zone, cells))
@@ -760,15 +734,13 @@ cdef class Page:
         # retrieve letter choices
         cdef LPWCH pChoices
         cdef LONG nbChoices
-        with nogil:
-            rc = kRecGetChoiceStr(self.handle, &pChoices, &nbChoices)
+        rc = kRecGetChoiceStr(self.handle, &pChoices, &nbChoices)
         CSDK.check_err(rc, 'kRecGetChoiceStr')
 
         # retrieve letter suggestions
         cdef LPWCH pSuggestions
         cdef LONG nbSuggestions
-        with nogil:
-            rc = kRecGetSuggestionStr(self.handle, &pSuggestions, &nbSuggestions)
+        rc = kRecGetSuggestionStr(self.handle, &pSuggestions, &nbSuggestions)
         CSDK.check_err(rc, 'kRecGetSuggestionStr')
 
         # retrieve letters
@@ -777,12 +749,10 @@ cdef class Page:
         cdef IMG_INFO img_info
         with _timing(timings, 'ocr_get_letters'):
             # we need vertical DPI to build letter font size
-            with nogil:
-                rc = kRecGetImgInfo(self.sdk.sid, self.handle, II_CURRENT, &img_info)
+            rc = kRecGetImgInfo(self.sdk.sid, self.handle, II_CURRENT, &img_info)
             CSDK.check_err(rc, 'kRecGetImgInfo')
             dpi_y = img_info.DPI.cy
-            with nogil:
-                rc = kRecGetLetters(self.handle, II_CURRENT, &pLetters, &nb_letters)
+            rc = kRecGetLetters(self.handle, II_CURRENT, &pLetters, &nb_letters)
             CSDK.check_err(rc, 'kRecGetLetters')
             self.letters = []
             for letter_id in range(nb_letters):
@@ -791,14 +761,11 @@ cdef class Page:
                     self.letters.append(letter)
 
         # cleanup
-        with nogil:
-            rc = kRecFree(pLetters)
+        rc = kRecFree(pLetters)
         CSDK.check_err(rc, 'kRecFree')
-        with nogil:
-            rc = kRecFree(pChoices)
+        rc = kRecFree(pChoices)
         CSDK.check_err(rc, 'kRecFree')
-        with nogil:
-            rc = kRecFree(pSuggestions)
+        rc = kRecFree(pSuggestions)
         CSDK.check_err(rc, 'kRecFree')
 
     def get_image(self, image_index):
@@ -808,13 +775,11 @@ cdef class Page:
         cdef PyObject* o
         cdef BYTE[768] palette
         cdef IMAGEINDEX img_index = image_index
-        with nogil:
-            rc = kRecGetImgArea(self.sdk.sid, self.handle, img_index, NULL, NULL, &img_info, &bitmap)
+        rc = kRecGetImgArea(self.sdk.sid, self.handle, img_index, NULL, NULL, &img_info, &bitmap)
         CSDK.check_err(rc, 'kRecGetImgArea')
         o = PyBytes_FromStringAndSize(<const char*> bitmap, img_info.BytesPerLine * img_info.Size.cy)
         bytes = <object> o
-        with nogil:
-            rc = kRecFree(bitmap)
+        rc = kRecFree(bitmap)
         CSDK.check_err(rc, 'kRecFree')
         if img_info.IsPalette == 1:
             CSDK.check_err(kRecGetImgPalette(self.sdk.sid, self.handle, image_index, palette), 'kRecGetImgPalette')
@@ -840,8 +805,7 @@ cdef class Page:
         cdef RECERR rc
         cdef IMG_INFO img_info
         cdef IMAGEINDEX index = image_index
-        with nogil:
-            rc = kRecGetImgInfo(self.sdk.sid, self.handle, index, &img_info)
+        rc = kRecGetImgInfo(self.sdk.sid, self.handle, index, &img_info)
         CSDK.check_err(rc, 'kRecGetImgInfo')
         size = (img_info.Size.cx, img_info.Size.cy)
         dpi = (img_info.DPI.cx, img_info.DPI.cy)
@@ -860,8 +824,7 @@ cdef class Page:
     def get_languages(self):
         cdef LANG_ENA languages[LANG_SIZE + 1]
         cdef RECERR rc
-        with nogil:
-            rc = kRecGetPageLanguages(self.handle, languages)
+        rc = kRecGetPageLanguages(self.handle, languages)
         CSDK.check_err(rc, 'kRecGetPageLanguages')
         cdef LANGUAGES lang
         result = set()

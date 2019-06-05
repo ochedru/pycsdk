@@ -667,7 +667,7 @@ cdef extern from "KernelApi.h":
     RECERR kRecSetCBProgMon(int sid, LPPROGMON_CB pCallBack, void *pContext)
     RECERR kRecSetTimeOut(int sid, DWORD TimeOut)
     RECERR kRecGetTimeOut(int sid, LPDWORD pTimeOut)
-    RECERR kRecFree(void *pArray) nogil
+    RECERR kRecFree(void *pArray)
     RECERR kRecGetModulesInfo(LPKRECMODULEINFO *ppModules, size_t *pSize)
     RECERR kRecLoadSettings(int sid, LPCTSTR pFileName)
     RECERR kRecSaveSettings(int sid, LPCTSTR pFileName)
@@ -779,18 +779,18 @@ cdef extern from "KernelApi.h":
     ctypedef RECT* LPRECT
     ctypedef const RECT* LPCRECT
     ctypedef IMG_CONVERSION* LPIMG_CONVERSION
-    RECERR kRecOpenImgFile(LPCTSTR pFilename, HIMGFILE *pHIMGFILE, int mode, IMF_FORMAT filetype) nogil
-    RECERR kRecCloseImgFile(HIMGFILE hIFile) nogil
+    RECERR kRecOpenImgFile(LPCTSTR pFilename, HIMGFILE *pHIMGFILE, int mode, IMF_FORMAT filetype)
+    RECERR kRecCloseImgFile(HIMGFILE hIFile)
     RECERR kRecGetPDFEncLevel(HIMGFILE hIFile, ENCRYPT_LEVEL *pEncLev)
     RECERR kRecSetImfLoadFlags(int sid, DWORD fFlag)
     RECERR kRecGetImfLoadFlags(int sid, DWORD *pfFlag)
-    RECERR kRecLoadImg(int sid, HIMGFILE hIFile, HPAGE *phPage, int iPage) nogil
-    RECERR kRecLoadImgF(int sid, LPCTSTR pFilename, HPAGE *phPage, int nPage) nogil
+    RECERR kRecLoadImg(int sid, HIMGFILE hIFile, HPAGE *phPage, int iPage)
+    RECERR kRecLoadImgF(int sid, LPCTSTR pFilename, HPAGE *phPage, int nPage)
     RECERR kRecLoadImgDataStream(int sid, HIMGFILE hIFile, HPAGE *phPage, int iPage)
     RECERR kRecLoadImgDataStreamF(int sid, LPCTSTR pFilename, HPAGE *phPage, int nPage)
     RECERR kRecDecompressImgDataStream(int sid, HPAGE hPage)
     RECERR kRecFreeImgDataStream(int sid, HPAGE hPage)
-    RECERR kRecLoadImgM(int sid, BYTE *lpBitmap, LPCIMG_INFO lpImg, HPAGE *phPage) nogil
+    RECERR kRecLoadImgM(int sid, BYTE *lpBitmap, LPCIMG_INFO lpImg, HPAGE *phPage)
     RECERR kRecLoadImgMC(int sid, BYTE *lpBuf, size_t bufLen, LPCCOMPRESSED_IMG_INFO lpCImg, HPAGE *phPage)
     RECERR kRecLoadImgDataStreamMC(int sid, BYTE *lpBuf, size_t bufLen, LPCOMPRESSED_IMG_INFO lpCImg, HPAGE *phPage)
     RECERR kRecSetCompressionLevel(int sid, int CompressionLevel)
@@ -800,16 +800,16 @@ cdef extern from "KernelApi.h":
     RECERR kRecSetMRCCompressionSettingsFromLevel(int sid, int CompressionLevel, COMPRESSION_TRADEOFF CompressionTradeOff)
     RECERR kRecSetJPGQuality(int sid, int nQuality)
     RECERR kRecGetJPGQuality(int sid, int *pnQuality)
-    RECERR kRecSaveImg(int sid, HIMGFILE hIFile, IMF_FORMAT Imgfileformat, HPAGE hPage, IMAGEINDEX iiImg, INTBOOL bAppend) nogil
-    RECERR kRecSaveImgForce(int sid, HIMGFILE hIFile, IMF_FORMAT Imgfileformat, HPAGE hPage, IMAGEINDEX iiImg, INTBOOL bAppend) nogil
-    RECERR kRecSaveImgF(int sid, LPCTSTR pFilename, IMF_FORMAT Imgfileformat, HPAGE hPage, IMAGEINDEX img, INTBOOL bAppend) nogil
+    RECERR kRecSaveImg(int sid, HIMGFILE hIFile, IMF_FORMAT Imgfileformat, HPAGE hPage, IMAGEINDEX iiImg, INTBOOL bAppend)
+    RECERR kRecSaveImgForce(int sid, HIMGFILE hIFile, IMF_FORMAT Imgfileformat, HPAGE hPage, IMAGEINDEX iiImg, INTBOOL bAppend)
+    RECERR kRecSaveImgF(int sid, LPCTSTR pFilename, IMF_FORMAT Imgfileformat, HPAGE hPage, IMAGEINDEX img, INTBOOL bAppend)
     RECERR kRecSaveImgForceF(int sid, LPCTSTR pFilename, IMF_FORMAT Imgfileformat, HPAGE hPage, IMAGEINDEX iiImg, INTBOOL bAppend)
     RECERR kRecSaveImgArea(int sid, HIMGFILE hIFile, IMF_FORMAT format, HPAGE hPage, IMAGEINDEX iiImg, LPCRECT pRect, INTBOOL append)
     RECERR kRecSaveImgAreaF(int sid, LPCTSTR pFilename, IMF_FORMAT format, HPAGE hPage, IMAGEINDEX iiImg, LPCRECT pRect, INTBOOL append)
     RECERR kRecSetPdfPassword(HIMGFILE hIFile, LPCTSTR pwd)
     RECERR kRecSetPdfTagInfo(int sid, INTBOOL bUseTagInfo)
     RECERR kRecGetPdfTagInfo(int sid, INTBOOL *pbUseTagInfo)
-    RECERR kRecGetImgFilePageCount(HIMGFILE hIFile, int *lpPageCount) nogil
+    RECERR kRecGetImgFilePageCount(HIMGFILE hIFile, int *lpPageCount)
     RECERR kRecGetImgFilePageInfo(int sid, HIMGFILE hIFile, int nPage, LPIMG_INFO pImg, IMF_FORMAT *pFormat)
     RECERR kRecCopyImgFilePage(int sid, HIMGFILE hIFileDst, int ndstPage, HIMGFILE hIFileSrc, int nsrcPage)
     RECERR kRecDeleteImgFilePage(int sid, HIMGFILE hIFile, int nPage)
@@ -901,8 +901,8 @@ cdef extern from "KernelApi.h":
     RECERR kRecGetImgDespeckleMode(int sid, LPINTBOOL lpbMode)
     RECERR kRecSetImgConvMode(int sid, IMG_CONVERSION Conversion)
     RECERR kRecGetImgConvMode(int sid, IMG_CONVERSION *pConversion)
-    RECERR kRecPreprocessImg(int sid, HPAGE hPage) nogil
-    RECERR kRecGetPreprocessInfo(HPAGE hPage, PREPROC_INFO *pPreprocInfo) nogil
+    RECERR kRecPreprocessImg(int sid, HPAGE hPage)
+    RECERR kRecGetPreprocessInfo(HPAGE hPage, PREPROC_INFO *pPreprocInfo)
     RECERR kRecRemovePunchHoles(int sid, HPAGE hPage, LPCRECT ROIs, int nROIs, LPRECT *Holes, int *nHoles, UINT flags, UINT minDiameter, UINT maxDiameter)
     RECERR kRecRemoveBorders(int sid, HPAGE hPage, UINT maxWidth)
     RECERR kRecDetectBook(int sid, HPAGE hPage, CUT_INFO *pInfo)
@@ -913,7 +913,7 @@ cdef extern from "KernelApi.h":
     RECERR kRecDetectFillingMethod(int sid, HPAGE hPage, FILLINGMETHOD *pocrType)
     RECERR kRecDetectImgSkew(int sid, HPAGE hPage, int *pSlope, IMG_ROTATE *pImgRotate)
     RECERR kRecPutImgArea(int sid, LPCIMG_INFO lpImg, const BYTE *lpBitmap, HPAGE hPage, int xDst, int yDst, LPCSIZE pDstSize)
-    RECERR kRecGetImgArea(int sid, HPAGE hPageIn, IMAGEINDEX iiImg, LPCRECT pSrcRect, LPCSIZE pDstSize, LPIMG_INFO pImg, BYTE **ppBitmap) nogil
+    RECERR kRecGetImgArea(int sid, HPAGE hPageIn, IMAGEINDEX iiImg, LPCRECT pSrcRect, LPCSIZE pDstSize, LPIMG_INFO pImg, BYTE **ppBitmap)
     RECERR kRecGetImgAreaEx(int sid, HPAGE hPageIn, IMAGEINDEX iiImg, LPCRECT pSrcRect, LPCSIZE pDstSize, IMG_STRETCHMODE StretchMode, IMG_LINEORDER LineOrder, IMG_RGBORDER RGBOrder, INTBOOL strict, IMG_PADDING Padding, LPIMG_INFO pImg, BYTE **ppBitmap)
     RECERR kRecStartReadImg(int sid, HPAGE hPage, IMAGEINDEX iiImg, LPCRECT pRect, IMG_ROTATE ImgRotation, LPWORD pBytes)
     RECERR kRecReadImg(int sid, LPBYTE pBuff)
@@ -934,7 +934,7 @@ cdef extern from "KernelApi.h":
     RECERR kRecSetImgPalette(HPAGE hPage, const BYTE *pPal)
     RECERR kRecGetImgPalette(int sid, HPAGE hPage, IMAGEINDEX iiImg, LPBYTE pPal)
     RECERR kRecDespeckleImg(int sid, HPAGE hPage)
-    RECERR kRecForceDespeckleImg(int sid, HPAGE hPage, LPCRECT pRect, DESPECKLE_METHOD method, int level) nogil
+    RECERR kRecForceDespeckleImg(int sid, HPAGE hPage, LPCRECT pRect, DESPECKLE_METHOD method, int level)
     RECERR kRecImgErosion(int sid, HPAGE hPage, ERO_DIL_TYPE type)
     RECERR kRecImgDilatation(int sid, HPAGE hPage, ERO_DIL_TYPE type)
     RECERR kRecConvertImg2BW(int sid, HPAGE hPageIn, IMG_CONVERSION Conversion, int Brightness, int Threshold, IMG_RESENH resolenh, HPAGE *phPageOut)
@@ -944,7 +944,7 @@ cdef extern from "KernelApi.h":
     RECERR kRecMergeImgArea(int sid, HPAGE hPageDst, LPCRECT pRectDst, HPAGE hPageSrc, LPCRECT pRectSrc, REC_COLOR tColor)
     RECERR kRecConvertImg(int sid, HPAGE hPage, WORD BitsPerPixel, UINT flags)
     RECERR kRecLineRemoval(int sid, HPAGE hPage, const RECT *pRect)
-    RECERR kRecRemoveLines(int sid, HPAGE hPage, IMAGEINDEX iiImg, const RECT *pRect) nogil
+    RECERR kRecRemoveLines(int sid, HPAGE hPage, IMAGEINDEX iiImg, const RECT *pRect)
     RECERR kRecGetLineCount(HPAGE hPage, int *pnLines)
     RECERR kRecGetLineInfo(HPAGE hPage, IMAGEINDEX iiImg, PRLINE pLine, int nLine)
     RECERR kRecGetFrameCount(HPAGE hPage, int *pnFrames)
@@ -954,13 +954,13 @@ cdef extern from "KernelApi.h":
     RECERR kRecDetectDropoutColorWeights(int sid, HPAGE hPage, IMAGEINDEX iiImg, RECT *pRect, int *pwred, int *pwgreen, int *pwblue)
     RECERR kRecDropImg(HPAGE hPage, IMAGEINDEX iiImg)
     RECERR kRecTransformCoordinates(HPAGE hPage, IMAGEINDEX iiDst, IMAGEINDEX iiSrc, int nP, LPPOINT pPoint)
-    RECERR kRecRotateImg(int sid, HPAGE hPage, IMG_ROTATE Rotation) nogil
+    RECERR kRecRotateImg(int sid, HPAGE hPage, IMG_ROTATE Rotation)
     RECERR kRecCreateImg(int sid, int sizeX, int sizeY, int dpiX, int dpiY, WORD BitsPerPixel, HPAGE *phPage)
-    RECERR kRecFreeImg(HPAGE hPage) nogil
-    RECERR kRecGetImgInfo(int sid, HPAGE hPage, IMAGEINDEX iiImg, LPIMG_INFO pImg) nogil
+    RECERR kRecFreeImg(HPAGE hPage)
+    RECERR kRecGetImgInfo(int sid, HPAGE hPage, IMAGEINDEX iiImg, LPIMG_INFO pImg)
     RECERR kRecGetImgMetaData(HPAGE hPage, HSETTING *phMetaData)
-    RECERR kRecGetImgFlags(HPAGE hPage, IMG_FLAGS Flag, INTBOOL *pbValue) nogil
-    RECERR kRecSetImgFlags(HPAGE hPage, IMG_FLAGS Flag, INTBOOL bValue) nogil
+    RECERR kRecGetImgFlags(HPAGE hPage, IMG_FLAGS Flag, INTBOOL *pbValue)
+    RECERR kRecSetImgFlags(HPAGE hPage, IMG_FLAGS Flag, INTBOOL bValue)
     RECERR kRecSetImgResolution(HPAGE hPage, SIZE DPI)
     RECERR kRecSetRetainColor(int sid, RETAINCOLOR RetainColor)
     RECERR kRecGetRetainColor(int sid, RETAINCOLOR *pRetainColor)
@@ -970,8 +970,8 @@ cdef extern from "KernelApi.h":
     # --------------------
     RECERR kRecLocateTable(int sid, HPAGE hPage, int zone, INTBOOL bForce)
     RECERR kRecCreateTableInfo(HPAGE hPage, int xZone)
-    RECERR kRecGetCellCount(HPAGE hPage, int xZone, int *pnCells) nogil
-    RECERR kRecGetCellInfo(HPAGE hPage, IMAGEINDEX iiImg, int xZone, int CellIndex, LPCELL_INFO pCellInfo) nogil
+    RECERR kRecGetCellCount(HPAGE hPage, int xZone, int *pnCells)
+    RECERR kRecGetCellInfo(HPAGE hPage, IMAGEINDEX iiImg, int xZone, int CellIndex, LPCELL_INFO pCellInfo)
     RECERR kRecSplitCells(HPAGE hPage, IMAGEINDEX iiImg, int xZone, INTBOOL bVertical, const RECT *pRect, POINT Position, int LineWidth, int LineStyle, REC_COLOR lineColor)
     RECERR kRecMergeCells(HPAGE hPage, IMAGEINDEX iiImg, int xZone, const RECT *pRect)
     RECERR kRecGetPointInfoFromTable(HPAGE hPage, IMAGEINDEX iiImg, int xZone, POINT Point, int xDist, int yDist, int *pCellIndex, BORDERINDEX *pBorderIndex)
@@ -1004,11 +1004,11 @@ cdef extern from "KernelApi.h":
     RECERR kRecGetNongriddedTableDetect(int sid, INTBOOL *bEnable)
     RECERR kRecSetForceSingleColumn(int sid, INTBOOL bForceSingle)
     RECERR kRecGetForceSingleColumn(int sid, INTBOOL *pbForceSingle)
-    RECERR kRecLocateZones(int sid, HPAGE hPage) nogil
+    RECERR kRecLocateZones(int sid, HPAGE hPage)
     RECERR kRecSetPageDescription(int sid, DWORD PageDesc)
     RECERR kRecGetPageDescription(int sid, DWORD *pPageDesc)
-    RECERR kRecGetZoneCount(HPAGE hPage, int *pnZones) nogil
-    RECERR kRecGetZoneInfo(HPAGE hPage, IMAGEINDEX iiImg, LPZONE pZone, int nZone) nogil
+    RECERR kRecGetZoneCount(HPAGE hPage, int *pnZones)
+    RECERR kRecGetZoneInfo(HPAGE hPage, IMAGEINDEX iiImg, LPZONE pZone, int nZone)
     RECERR kRecGetZoneLayout(HPAGE hPage, IMAGEINDEX iiImg, LPRECT *ppRects, int *pnRects, int iZone)
     RECERR kRecGetZoneNodeArray(HPAGE hPage, IMAGEINDEX iiImg, LPPOINT *ppPoints, int *pnNodes, int iZone)
     RECERR kRecDeleteAllZones(HPAGE hPage)
@@ -1017,13 +1017,13 @@ cdef extern from "KernelApi.h":
     RECERR kRecInsertZone(HPAGE hPage, IMAGEINDEX iiImg, LPCZONE pZone, int nZone)
     RECERR kRecAddZoneRect(HPAGE hPage, IMAGEINDEX iiImg, const RECT *pRect, int nZone)
     RECERR kRecSubZoneRect(HPAGE hPage, IMAGEINDEX iiImg, const RECT *pRect, int nZone)
-    RECERR kRecCopyOCRZones(HPAGE hPage) nogil
+    RECERR kRecCopyOCRZones(HPAGE hPage)
     RECERR kRecLoadZones(HPAGE hPage, LPCTSTR pFileName)
     RECERR kRecSaveZones(HPAGE hPage, LPCTSTR pFileName)
     RECERR kRecUpdateZone(HPAGE hPage, IMAGEINDEX iiImg, LPCZONE pZone, int nZone)
     RECERR kRecSetZoneLayout(HPAGE hPage, IMAGEINDEX iiImg, LPCRECT pRects, int nRects, int nZone)
-    RECERR kRecGetOCRZoneCount(HPAGE hPage, int *pnOCRZones) nogil
-    RECERR kRecGetOCRZoneInfo(HPAGE hPage, IMAGEINDEX iiImg, LPZONE pOCRZone, int nOCRZone) nogil
+    RECERR kRecGetOCRZoneCount(HPAGE hPage, int *pnOCRZones)
+    RECERR kRecGetOCRZoneInfo(HPAGE hPage, IMAGEINDEX iiImg, LPZONE pOCRZone, int nOCRZone)
     RECERR kRecGetOCRZoneData(HPAGE hPage, IMAGEINDEX iiImg, LPZONEDATA pOCRZoneData, int nOCRZone)
     RECERR kRecGetOCRZoneLayout(HPAGE hPage, IMAGEINDEX iiImg, LPRECT *ppRects, int *pnRects, int nZone)
     RECERR kRecGetOCRZoneNodeArray(HPAGE hPage, IMAGEINDEX iiImg, LPPOINT *ppPoints, int *pnNodes, int iZone)
@@ -1136,7 +1136,7 @@ cdef extern from "KernelApi.h":
     RECERR kRecGetDefaultRecognitionModule(int sid, RECOGNITIONMODULE *rm)
     RECERR kRecSetTrainingFileName(int sid, LPCTSTR pFileName)
     RECERR kRecGetTrainingFileName(int sid, LPTSTR pFileName, size_t iSize)
-    RECERR kRecRecognize(int sid, HPAGE hPage, LPCTSTR pFilename) nogil
+    RECERR kRecRecognize(int sid, HPAGE hPage, LPCTSTR pFilename)
     RECERR kRecProcessPages(int sid, LPCTSTR pDocFile, LPCTSTR *pImageFiles, LPONETOUCH_CB pCallback, void *pContext, LPCTSTR pTemplate)
     RECERR kRecProcessPagesEx(int sid, LPCTSTR pDocFile, LPCTSTR *pImageFiles, LPONETOUCH_CB pCallback, void *pContext, LPCTSTR pTemplate)
     RECERR kRecGetRPPErrorList(RPPERRORS **rppErrs)
@@ -1179,10 +1179,10 @@ cdef extern from "KernelApi.h":
         DWORD ndxExt
     ctypedef LETTER* LPLETTER
     ctypedef const LETTER* LPCLETTER
-    RECERR kRecGetLetters(HPAGE hPage, IMAGEINDEX iiImage, LPLETTER *ppLetter, LPLONG pLettersLength) nogil
+    RECERR kRecGetLetters(HPAGE hPage, IMAGEINDEX iiImage, LPLETTER *ppLetter, LPLONG pLettersLength)
     RECERR kRecGetLetterPalette(HPAGE hPage, REC_COLOR **ppColours, LPLONG pNum)
-    RECERR kRecGetChoiceStr(HPAGE hPage, WCHAR **ppChoices, LPLONG pLength) nogil
-    RECERR kRecGetSuggestionStr(HPAGE hPage, WCHAR **ppSuggestions, LPLONG pLength) nogil
+    RECERR kRecGetChoiceStr(HPAGE hPage, WCHAR **ppChoices, LPLONG pLength)
+    RECERR kRecGetSuggestionStr(HPAGE hPage, WCHAR **ppSuggestions, LPLONG pLength)
     RECERR kRecGetFontFaceStr(HPAGE hPage, char **ppFontFaces, LPLONG pLength)
     RECERR kRecSetLetters(LETTERSTRENGTH towhere, HPAGE hPage, IMAGEINDEX iiImage, LPCLETTER pLetter, LONG LettersLength)
     RECERR kRecFreeRecognitionData(HPAGE hPage)
@@ -1203,10 +1203,10 @@ cdef extern from "KernelApi.h":
         RM_FLAGS rm_support
     RECERR kRecSetLanguages(int sid, LANG_ENA *pLanguages)
     RECERR kRecGetLanguages(int sid, LANG_ENA *pLanguages)
-    RECERR kRecManageLanguages(int sid, MANAGE_LANG action, LANGUAGES language) nogil
+    RECERR kRecManageLanguages(int sid, MANAGE_LANG action, LANGUAGES language)
     RECERR kRecSetSingleLanguageDetection(int sid, INTBOOL bEnable)
     RECERR kRecGetSingleLanguageDetection(int sid, INTBOOL *pbEnable)
-    RECERR kRecGetPageLanguages(HPAGE hPage, LANG_ENA *pOcrLanguages) nogil
+    RECERR kRecGetPageLanguages(HPAGE hPage, LANG_ENA *pOcrLanguages)
     RECERR kRecGetLanguageInfo(LANGUAGES lang, LANGUAGE_INFO *pInfo)
     RECERR kRecFindLanguages(const LANGUAGE_INFO *pInfo, LANG_ENA *pLanguages)
     RECERR kRecFindLanguage(LPCTSTR pLangName, LANGUAGES *pLanguage)
