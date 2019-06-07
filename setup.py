@@ -16,15 +16,22 @@ for root, dirs, files in os.walk(".", topdown=False):
             shutil.rmtree(name)
 
 # build "pycsdk.so" python extension to be added to "PYTHONPATH" afterwards...
+
+class CsdkBuildExt(build_ext):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pyrex_gdb = True
+
 setup(
     name='pycsdk',
     version='20.3.2',
-    cmdclass = {'build_ext': build_ext},
+    cmdclass = {'build_ext': CsdkBuildExt},
     ext_modules = [
         Extension("pycsdk",
                   sources=["pycsdk.pyx"],
                   libraries=["kernelapi", "recpdf", "recapiplus"],
-                  extra_compile_args=["-I/usr/local/include/nuance-omnipage-csdk-20.3", "-g", "-O0", "-ggdb", "-fno-omit-frame-pointer"],
+                  extra_compile_args=["-I/usr/local/include/nuance-omnipage-csdk-20.3", "-Wno-unused", "-g", "-O0", "-ggdb", "-fno-omit-frame-pointer"],
                   extra_link_args=["-L/usr/local/lib/nuance-omnipage-csdk-lib64-20.3"]
              )
         ]
