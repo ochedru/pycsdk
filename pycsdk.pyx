@@ -1,8 +1,9 @@
 # cython: language_level=3, boundscheck=True, nonecheck=True, c_string_type=str, c_string_encoding=ascii
+# TODO investigate
+# https://bugs.python.org/issue31426
 
 import os
 import tempfile
-from cpython.ref cimport PyObject
 from cpython.float cimport PyFloat_FromDouble
 from PIL import Image
 from pprint import pformat
@@ -298,7 +299,6 @@ cdef class CSDK:
         return File(self, file_path, write_pdf=True)
     
     cdef convert_wchar_string_to_python_str(self, LPCWSTR pwch, DWORD length):
-        return 'a'
         cdef size_t buffer_length
         cdef RECERR rc
         cdef size_t used_length = 0
@@ -549,6 +549,8 @@ cdef class Page:
     def __cinit__(self, File file, page_id):
         self.sdk = file.sdk
         self.page_id = page_id
+        self.zones = list()
+        self.letters = list()
         self.handle = NULL
         cdef int iPage = page_id
         cdef RECERR rc = kRecLoadImg(self.sdk.sid, file.handle, &self.handle, iPage)
@@ -735,7 +737,7 @@ cdef class Page:
             CSDK.check_err(rc, 'kRecCopyOCRZones')
             rc = kRecGetZoneCount(self.handle, &nb_zones)
             CSDK.check_err(rc, 'kRecGetZoneCount')
-            self.zones = []
+            self.zones = list()
             for zone_id in range(nb_zones):
                 rc = kRecGetZoneInfo(self.handle, II_CURRENT, &zone, zone_id)
                 CSDK.check_err(rc, 'kRecGetZoneInfo')
@@ -773,7 +775,7 @@ cdef class Page:
             dpi_y = img_info.DPI.cy
             rc = kRecGetLetters(self.handle, II_CURRENT, &pLetters, &nb_letters)
             CSDK.check_err(rc, 'kRecGetLetters')
-            self.letters = []
+            self.letters = list()
             for letter_id in range(nb_letters):
                 i_letter = letter_id
                 pLetter = pLetters + i_letter
