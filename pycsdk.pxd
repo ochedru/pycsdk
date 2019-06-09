@@ -1,3 +1,5 @@
+# cython: language_level=3, boundscheck=True, nonecheck=True, c_string_type=str, c_string_encoding=ascii
+
 ctypedef unsigned int RECERR
 ctypedef const char* LPCSTR
 ctypedef const char* LPCTSTR

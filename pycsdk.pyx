@@ -8,12 +8,7 @@ from PIL import Image
 from pprint import pformat
 from contextlib import contextmanager
 from datetime import datetime
-
-
-cdef extern from "Python.h":
-    cdef int PyUnicode_2BYTE_KIND "PyUnicode_2BYTE_KIND"
-    PyObject* PyUnicode_FromKindAndData(int kind, const void *buffer, Py_ssize_t size)
-    PyObject* PyBytes_FromStringAndSize(const char *v, Py_ssize_t len)
+from libc.stdlib cimport malloc, free
 
 class TwoWayDict(dict):
     def __setitem__(self, key, value):
@@ -274,8 +269,7 @@ cdef class CSDK:
         length = 0
         while setting_value[length] != 0:
             length += 1
-        cdef PyObject* o = PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, setting_value, length)
-        return <object> o
+        return self.convert_wchar_string_to_python_str(setting_value, length)
 
     def set_language(self, lang_code):
         cdef RECERR rc
@@ -302,6 +296,28 @@ cdef class CSDK:
 
     def create_file(self, file_path):
         return File(self, file_path, write_pdf=True)
+    
+    cdef convert_wchar_string_to_python_str(self, LPCWSTR pwch, DWORD length):
+        return 'a'
+        cdef size_t buffer_length
+        cdef RECERR rc
+        cdef size_t used_length = 0
+        # a UTF-8 char can use up to 4 bytes
+        cdef size_t total_length = length * 4 * sizeof(BYTE)
+        cdef LPBYTE buffer = <LPBYTE> malloc(total_length)
+        if buffer == NULL:
+            raise MemoryError()
+        try:
+            for i in range(length):
+                buffer_length = total_length - used_length
+                rc = kRecConvertUnicode2CodePage(self.sid, pwch[i], buffer + used_length, &buffer_length)
+                CSDK.check_err(rc, 'kRecConvertUnicode2CodePage')
+                used_length += buffer_length
+            bytes = buffer[:used_length]
+            s = bytes.decode('UTF-8')
+            return s
+        finally:
+            free(buffer)
 
 cdef class File:
     cdef CSDK sdk
@@ -415,69 +431,6 @@ class Letter:
         return pformat(vars(self))
 
 
-cdef build_letter(LETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
-    if letter.code == 0x0fffd:  # UNICODE_REJECTED
-        return None
-    cdef WCHAR* pCode = &letter.code
-    code = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pCode, 1)
-    if letter.cntChoices > 1:
-        choices = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pChoices + letter.ndxChoices,
-                                                     letter.cntChoices - 1)
-    else:
-        choices = ''
-    if letter.cntSuggestions > 1:
-        suggestions = <object> PyUnicode_FromKindAndData(PyUnicode_2BYTE_KIND, pSuggestions + letter.ndxSuggestions,
-                                                         letter.cntSuggestions - 1)
-    else:
-        suggestions = ''
-    nb_spaces = None
-    space_type = None
-    if code == ' ':
-        nb_spaces = letter.spcInfo.spcCount
-        spc_type = letter.spcInfo.spcType
-        if spc_type == 0:
-            space_type = 'SPC_SPACE'
-        elif spc_type == 1:
-            space_type = 'SPC_TAB'
-        elif spc_type == 2:
-            space_type = 'SPC_LEADERDOT'
-        elif spc_type == 3:
-            space_type = 'SPC_LEADERLINE'
-        elif spc_type == 4:
-            space_type = 'SPC_LEADERHYPHEN'
-        else:
-            space_type = 'UNKNOWN_{}'.format(spc_type)
-    cdef BYTE err = letter.err
-    word_suspicious = True if err & 0x80 else False
-    err = err & 0x7f
-    if err >= 100:
-        confidence = 0
-    else:
-        confidence = 100 - err
-    italic = True if letter.fontAttrib & 0x0002 else False
-    bold = True if letter.fontAttrib & 0x0008 else False
-    end_word = True if letter.makeup & 0x0004 else False
-    end_line = True if letter.makeup & 0x0001 else False
-    end_cell = True if letter.makeup & 0x0020 else False
-    end_row = True if letter.makeup & 0x0040 else False
-    in_cell = True if letter.makeup & 0x0080 else False
-    orientation = 'R_NORMTEXT'
-    if letter.makeup & 0x0300 == 0x0300:
-        orientation = 'R_RIGHTTEXT'
-    elif letter.makeup & 0x0100 == 0x0100:
-        orientation = 'R_VERTTEXT'
-    elif letter.makeup & 0x0200 == 0x0200:
-        orientation = 'R_LEFTTEXT'
-    rtl = True if letter.makeup & 0x0400 else False
-    lang = lang_dict.get(letter.lang, None)
-    lang2 = lang_dict.get(letter.lang2, None)
-    dictionary_word = True if letter.info & 0x40000000 else False
-    return Letter(letter.top, letter.left, letter.top + letter.height, letter.left + letter.width,
-                  letter.capHeight * 100.0 / dpi,
-                  letter.cellNum, letter.zone, code, space_type, nb_spaces, choices, suggestions,
-                  lang, lang2, dictionary_word, confidence, word_suspicious,
-                  italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl)
-
 cdef zone_type(ZONETYPE type):
     switcher = {
         WT_FLOW: "WT_FLOW",
@@ -530,11 +483,11 @@ class Cell:
         return pformat(vars(self))
 
 
-cdef build_cell(CELL_INFO cell):
-    return Cell(cell.rect.top, cell.rect.left, cell.rect.bottom, cell.rect.right,
-                zone_type(cell.type), cell.cellcolor, cell.lcolor, cell.tcolor, cell.rcolor, cell.bcolor,
-                line_style(cell.lstyle), line_style(cell.tstyle), line_style(cell.rstyle), line_style(cell.bstyle),
-                cell.lwidth, cell.twidth, cell.rwidth, cell.bwidth)
+cdef build_cell(LPCCELL_INFO cell):
+    return Cell(cell[0].rect.top, cell[0].rect.left, cell[0].rect.bottom, cell[0].rect.right,
+                zone_type(cell[0].type), cell[0].cellcolor, cell[0].lcolor, cell[0].tcolor, cell[0].rcolor, cell[0].bcolor,
+                line_style(cell[0].lstyle), line_style(cell[0].tstyle), line_style(cell[0].rstyle), line_style(cell[0].bstyle),
+                cell[0].lwidth, cell[0].twidth, cell[0].rwidth, cell[0].bwidth)
 
 
 class Zone:
@@ -550,9 +503,9 @@ class Zone:
         return pformat(vars(self))
 
 
-cdef build_zone(ZONE zone, cells):
-    return Zone(zone.rectBBox.top, zone.rectBBox.left, zone.rectBBox.bottom, zone.rectBBox.right,
-                zone_type(zone.type), cells)
+cdef build_zone(LPZONE zone, cells):
+    return Zone(zone[0].rectBBox.top, zone[0].rectBBox.left, zone[0].rectBBox.bottom, zone[0].rectBBox.right,
+                zone_type(zone[0].type), cells)
 
 
 class PreprocInfo:
@@ -702,6 +655,70 @@ cdef class Page:
             rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
             CSDK.check_err(rc, 'kRecRemoveLines')
 
+    cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
+        code = self.sdk.convert_wchar_string_to_python_str(&letter[0].code, 1)
+        if code == '':
+            return None
+        cdef DWORD ndxChoices = letter[0].ndxChoices
+        if letter[0].cntChoices > 1:
+            choices = self.sdk.convert_wchar_string_to_python_str(pChoices + ndxChoices,
+                                                                  letter[0].cntChoices - 1)
+        else:
+            choices = ''
+        cdef DWORD ndxSuggestions = letter[0].ndxSuggestions
+        if letter[0].cntSuggestions > 1:
+            suggestions = self.sdk.convert_wchar_string_to_python_str(pSuggestions + ndxSuggestions,
+                                                                      letter[0].cntSuggestions - 1)
+        else:
+            suggestions = ''
+        nb_spaces = None
+        space_type = None
+        if code == ' ':
+            nb_spaces = letter[0].spcInfo.spcCount
+            spc_type = letter[0].spcInfo.spcType
+            if spc_type == 0:
+                space_type = 'SPC_SPACE'
+            elif spc_type == 1:
+                space_type = 'SPC_TAB'
+            elif spc_type == 2:
+                space_type = 'SPC_LEADERDOT'
+            elif spc_type == 3:
+                space_type = 'SPC_LEADERLINE'
+            elif spc_type == 4:
+                space_type = 'SPC_LEADERHYPHEN'
+            else:
+                space_type = 'UNKNOWN_{}'.format(spc_type)
+        cdef BYTE err = letter[0].err
+        word_suspicious = True if err & 0x80 else False
+        err = err & 0x7f
+        if err >= 100:
+            confidence = 0
+        else:
+            confidence = 100 - err
+        italic = True if letter[0].fontAttrib & 0x0002 else False
+        bold = True if letter[0].fontAttrib & 0x0008 else False
+        end_word = True if letter[0].makeup & 0x0004 else False
+        end_line = True if letter[0].makeup & 0x0001 else False
+        end_cell = True if letter[0].makeup & 0x0020 else False
+        end_row = True if letter[0].makeup & 0x0040 else False
+        in_cell = True if letter[0].makeup & 0x0080 else False
+        orientation = 'R_NORMTEXT'
+        if letter[0].makeup & 0x0300 == 0x0300:
+            orientation = 'R_RIGHTTEXT'
+        elif letter[0].makeup & 0x0100 == 0x0100:
+            orientation = 'R_VERTTEXT'
+        elif letter[0].makeup & 0x0200 == 0x0200:
+            orientation = 'R_LEFTTEXT'
+        rtl = True if letter[0].makeup & 0x0400 else False
+        lang = lang_dict.get(letter[0].lang, None)
+        lang2 = lang_dict.get(letter[0].lang2, None)
+        dictionary_word = True if letter[0].info & 0x40000000 else False
+        return Letter(letter[0].top, letter[0].left, letter[0].top + letter[0].height, letter[0].left + letter[0].width,
+                      letter[0].capHeight * 100.0 / dpi,
+                      letter[0].cellNum, letter[0].zone, code, space_type, nb_spaces, choices, suggestions,
+                      lang, lang2, dictionary_word, confidence, word_suspicious,
+                      italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl)
+
     def recognize(self, timings=dict()):
         cdef RECERR rc
         with _timing(timings, 'ocr_recognize'):
@@ -728,8 +745,8 @@ cdef class Page:
                 for cell_id in range(nb_cells):
                     rc = kRecGetCellInfo(self.handle, II_CURRENT, zone_id, cell_id, &cell)
                     CSDK.check_err(rc, 'kRecGetCellInfo')
-                    cells.append(build_cell(cell))
-                self.zones.append(build_zone(zone, cells))
+                    cells.append(build_cell(&cell))
+                self.zones.append(build_zone(&zone, cells))
 
         # retrieve letter choices
         cdef LPWCH pChoices
@@ -745,8 +762,10 @@ cdef class Page:
 
         # retrieve letters
         cdef LPLETTER pLetters
+        cdef LPCLETTER pLetter
         cdef LONG nb_letters
         cdef IMG_INFO img_info
+        cdef int i_letter
         with _timing(timings, 'ocr_get_letters'):
             # we need vertical DPI to build letter font size
             rc = kRecGetImgInfo(self.sdk.sid, self.handle, II_CURRENT, &img_info)
@@ -756,7 +775,9 @@ cdef class Page:
             CSDK.check_err(rc, 'kRecGetLetters')
             self.letters = []
             for letter_id in range(nb_letters):
-                letter = build_letter(pLetters[letter_id], pChoices, pSuggestions, dpi_y)
+                i_letter = letter_id
+                pLetter = pLetters + i_letter
+                letter = self.build_letter(pLetter, pChoices, pSuggestions, dpi_y)
                 if letter and letter.zone_id < len(self.zones):
                     self.letters.append(letter)
 
@@ -772,13 +793,11 @@ cdef class Page:
         cdef RECERR rc
         cdef IMG_INFO img_info
         cdef LPBYTE bitmap
-        cdef PyObject* o
         cdef BYTE[768] palette
         cdef IMAGEINDEX img_index = image_index
         rc = kRecGetImgArea(self.sdk.sid, self.handle, img_index, NULL, NULL, &img_info, &bitmap)
         CSDK.check_err(rc, 'kRecGetImgArea')
-        o = PyBytes_FromStringAndSize(<const char*> bitmap, img_info.BytesPerLine * img_info.Size.cy)
-        bytes = <object> o
+        bytes = bitmap[:img_info.BytesPerLine * img_info.Size.cy]
         rc = kRecFree(bitmap)
         CSDK.check_err(rc, 'kRecFree')
         if img_info.IsPalette == 1:
@@ -791,8 +810,7 @@ cdef class Page:
         elif img_info.BitsPerPixel == 8 and img_info.IsPalette == 1:
             image = Image.frombytes('P', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'P', img_info.BytesPerLine,
                                     1)
-            o = PyBytes_FromStringAndSize(<const char*> palette, sizeof(palette))
-            palette_bytes = <object> o
+            palette_bytes = palette[:sizeof(palette)]
             image.putpalette(palette_bytes)
         elif img_info.BitsPerPixel == 24:
             image = Image.frombytes('RGB', (img_info.Size.cx, img_info.Size.cy), bytes, 'raw', 'RGB',
@@ -820,6 +838,14 @@ cdef class Page:
         else:
             mode = 'UNKNOWN(bits={}, palette={})'.format(img_info.BitsPerPixel, img_info.IsPalette)
         return ImageInfo(size, dpi, mode)
+
+    def set_image_resolution(self, dpi_x, dpi_y):
+        cdef RECERR rc
+        cdef SIZE size
+        size.cx = dpi_x
+        size.cy = dpi_y
+        rc = kRecSetImgResolution(self.handle, size)
+        CSDK.check_err(rc, 'kRecSetImgResolution')
 
     def get_languages(self):
         cdef LANG_ENA languages[LANG_SIZE + 1]
