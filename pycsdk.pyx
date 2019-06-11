@@ -849,6 +849,22 @@ cdef class Page:
         rc = kRecSetImgResolution(self.handle, size)
         CSDK.check_err(rc, 'kRecSetImgResolution')
 
+    def transform_image(self, width, height):
+        cdef HPAGE new_handle
+        cdef RECERR rc
+        cdef SIZE size
+        cdef IMG_INFO img_info
+        rc = kRecGetImgInfo(self.sdk.sid, self.handle, II_CURRENT, &img_info)
+        CSDK.check_err(rc, 'kRecGetImgInfo')
+        size.cx = width
+        size.cy = height
+        rc = kRecTransformImg(self.sdk.sid, self.handle, II_CURRENT, NULL, &size, img_info.BitsPerPixel, &new_handle)
+        CSDK.check_err(rc, 'kRecTransformImg')
+        cdef HPAGE old_handle = self.handle
+        self.handle = new_handle
+        rc = kRecFreeImg(old_handle)
+        CSDK.check_err(rc, 'kRecFreeImg')
+
     def get_languages(self):
         cdef LANG_ENA languages[LANG_SIZE + 1]
         cdef RECERR rc
