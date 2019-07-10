@@ -16,16 +16,16 @@ for root, dirs, files in os.walk(".", topdown=False):
 # build "pycsdk.so" python extension to be added to "PYTHONPATH" afterwards...
 setup(
     name='pycsdk',
-    version='20.3.4',
+    version='20.3.5',
     cmdclass={'build_ext': build_ext},
     ext_modules=[
         Extension("pycsdk",
                   sources=["pycsdk.pyx"],
                   libraries=["kernelapi", "recpdf", "recapiplus"],
-                  extra_compile_args=["-I/usr/local/include/nuance-omnipage-csdk-20.3", "-Wno-unused"],
+                  extra_compile_args=["-I/usr/local/include/kofax-omnipage-csdk-20.3", "-Wno-unused"],
                   # debug compilation args:
-                  # extra_compile_args=["-I/usr/local/include/nuance-omnipage-csdk-20.3", "-Wno-unused", "-g", "-O0", "-ggdb", "-fno-omit-frame-pointer"],
-                  extra_link_args=["-L/usr/local/lib/nuance-omnipage-csdk-lib64-20.3"]
+                  # extra_compile_args=["-I/usr/local/include/kofax-omnipage-csdk-20.3", "-Wno-unused", "-g", "-O0", "-ggdb", "-fno-omit-frame-pointer"],
+                  extra_link_args=["-L/usr/local/lib/kofax-omnipage-csdk-lib64-20.3"]
                   )
     ]
 )
