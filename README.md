@@ -1,6 +1,6 @@
 # pyCSDK
 
-A Python/Cython wrapper for the Omnipage CSDK. It offers a simple python API to get OCR results.
+A Python/Cython wrapper for the Kofax CSDK. It offers a simple python API to get OCR results.
 
 ## Install
 
@@ -9,7 +9,7 @@ First, set `LD_LIBRARY_PATH` to point to the CSDK shared libraries.
 For example:
 
 ```bash
-$ export LD_LIBRARY_PATH=/usr/local/lib/nuance-omnipage-csdk-lib64-20.3:$LD_LIBRARY_PATH
+$ export LD_LIBRARY_PATH=/usr/local/lib/kofax-omnipage-csdk-lib64-20.3:$LD_LIBRARY_PATH
 ```
 
 Next, clone this repo, enter the directory and
