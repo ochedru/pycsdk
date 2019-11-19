@@ -20,6 +20,11 @@ ctypedef int LONG
 ctypedef int* LPLONG
 ctypedef unsigned int UINT
 
+cdef extern from "<stdbool.h>":
+    pass
+
+from libcpp cimport bool
+
 cpdef enum KRECMODULES:
     INFO_API = 0
     INFO_MOR
@@ -638,8 +643,8 @@ cpdef enum DTXTOUTPUTFORMATS:
 cpdef enum HPAGESaveFlags:
     HPSF_Default = 0x0000
     HPSF_SaveAll = 0xFFFF
-        
-cdef extern from "KernelApi.h":
+
+cdef extern from "recpdf.h":
 
     # general operations module
     # -------------------------
@@ -1260,6 +1265,17 @@ cdef extern from "KernelApi.h":
     RECERR kRecGetDCClassName(DCHANDLE hDCClass, LPTSTR *ppName)
     RECERR kRecSetDCConfidenceThreshold(DCHANDLE hDCProject, int ConfidenceThreshold)
     RECERR kRecGetDCConfidenceThreshold(DCHANDLE hDCProject, int *pConfidenceThreshold)
+
+    # PDF module
+    # ----------
+    ctypedef struct tagRPDF_DOC:
+        pass
+    ctypedef tagRPDF_DOC* RPDF_DOC
+    RECERR rPdfInit()
+    RECERR rPdfQuit()
+    RECERR rPdfOpen(LPCTSTR pFileName, LPCTSTR password, RPDF_DOC *handle)
+    RECERR rPdfFileHasText(RPDF_DOC handle, size_t position, bool *bHasText)
+    RECERR rPdfClose(RPDF_DOC handle)
 
 cdef extern from "RecApiPlus.h":  
 
