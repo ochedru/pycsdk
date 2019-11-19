@@ -671,7 +671,7 @@ cdef class Page:
             rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
             CSDK.check_err(rc, 'kRecRemoveLines')
 
-    cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions, REC_COLOR* pColors, dpi):
+    cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions):
         code = self.sdk.convert_wchar_string_to_python_str(&letter[0].code, 1)
         if code == '':
             return None
@@ -729,15 +729,11 @@ cdef class Page:
         lang = lang_dict.get(letter[0].lang, None)
         lang2 = lang_dict.get(letter[0].lang2, None)
         dictionary_word = True if letter[0].info & 0x40000000 else False
-        fg_color = pColors[letter[0].ndxFGColor]
-        print('fg={}'.format(fg_color))
-        bg_color = pColors[letter[0].ndxBGColor]
-        print('bg={}'.format(bg_color))
         return Letter(letter[0].top, letter[0].left, letter[0].top + letter[0].height, letter[0].left + letter[0].width,
                       letter[0].capHeight * 100.0 / dpi,
                       letter[0].cellNum, letter[0].zone, code, space_type, nb_spaces, choices, suggestions,
                       lang, lang2, dictionary_word, confidence, word_suspicious,
-                      italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl, fg_color, bg_color)
+                      italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl)
 
     def recognize(self, timings=dict()):
         cdef RECERR rc
@@ -780,12 +776,6 @@ cdef class Page:
         rc = kRecGetSuggestionStr(self.handle, &pSuggestions, &nbSuggestions)
         CSDK.check_err(rc, 'kRecGetSuggestionStr')
         
-        # retrieve letter palette
-        cdef REC_COLOR* pColors
-        cdef LONG nbColors
-        rc = kRecGetLetterPalette(self.handle, &pColors, &nbColors)
-        CSDK.check_err(rc, 'kRecGetLetterPalette')
-
         # retrieve letters
         cdef LPLETTER pLetters
         cdef LPCLETTER pLetter
@@ -803,7 +793,7 @@ cdef class Page:
             for letter_id in range(nb_letters):
                 i_letter = letter_id
                 pLetter = pLetters + i_letter
-                letter = self.build_letter(pLetter, pChoices, pSuggestions, pColors, dpi_y)
+                letter = self.build_letter(pLetter, pChoices, pSuggestions, dpi_y)
                 if letter and letter.zone_id < len(self.zones):
                     self.letters.append(letter)
 
@@ -813,8 +803,6 @@ cdef class Page:
         rc = kRecFree(pChoices)
         CSDK.check_err(rc, 'kRecFree')
         rc = kRecFree(pSuggestions)
-        CSDK.check_err(rc, 'kRecFree')
-        rc = kRecFree(pColors)
         CSDK.check_err(rc, 'kRecFree')
 
     def get_image(self, image_index):
