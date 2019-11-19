@@ -216,6 +216,7 @@ cdef class CSDK:
         if license_file is not None and code is not None:
             CSDK.check_err(kRecSetLicense(license_file, code), 'kRecSetLicense')
         CSDK.check_err(RecInitPlus(company_name, product_name), 'RecInitPlus')
+        CSDK.check_err(rPdfInit(), 'rPdfInit')
 
         # create a settings collection for this CSDK instance
         self.sid = kRecCreateSettingsCollection(-1)
@@ -226,6 +227,7 @@ cdef class CSDK:
         self.set_setting('Kernel.DTxt.txt.LineBreak', '\n')
 
     def __dealloc__(self):
+        CSDK.check_err(rPdfQuit(), 'rPdfQuit')
         if self.sid != -1:
             CSDK.check_err(kRecDeleteSettingsCollection(self.sid), 'kRecDeleteSettingsCollection')
         CSDK.check_err(RecQuitPlus(), 'RecQuitPlus')
@@ -322,9 +324,11 @@ cdef class CSDK:
 cdef class File:
     cdef CSDK sdk
     cdef HIMGFILE handle
+    cdef RPDF_DOC pdf_doc
     cdef public:
         object read_only
         object nb_pages
+        object is_pdf_doc
 
     def __cinit__(self, CSDK sdk, file_path, write_pdf = False):
         self.sdk = sdk
@@ -350,6 +354,8 @@ cdef class File:
             rc = kRecGetImgFilePageCount(self.handle, &n)
             CSDK.check_err(rc, 'kRecGetImgFilePageCount')
         self.nb_pages = n
+        rc = rPdfOpen(pFilePath, NULL, &self.pdf_doc)
+        self.is_pdf_doc = rc == 0
 
     def close(self):
         cdef RECERR rc
@@ -391,7 +397,7 @@ cdef class File:
             rc = kRecSaveImg(self.sdk.sid, self.handle, FF_PDF, hPage, II_ORIGINAL, 1)
             CSDK.check_err(rc, 'kRecSaveImg')
             rc = kRecFreeImg(hPage)
-            CSDK.check_err(rc, 'kRecFreeImg')
+            CSDK.check_err(rc, 'kRecFreeImg')   
         finally:
             os.unlink(tf.name)
 
@@ -399,7 +405,7 @@ cdef class File:
 class Letter:
     def __init__(self, top, left, bottom, right, font_size, cell_num, zone_id, code, space_type, nb_spaces,
                  choices, suggestions, lang, lang2, dictionary_word, confidence, word_suspicious, italic, bold,
-                 end_word, end_line, end_cell, end_row, in_cell, orientation, rtl):
+                 end_word, end_line, end_cell, end_row, in_cell, orientation, rtl, fg_color, bg_color):
         self.top = top
         self.left = left
         self.bottom = bottom
@@ -426,6 +432,8 @@ class Letter:
         self.in_cell = in_cell
         self.orientation = orientation
         self.rtl = rtl
+        self.fg_color = fg_color
+        self.bg_color = bg_color
 
     def __repr__(self):
         return pformat(vars(self))
@@ -545,6 +553,7 @@ cdef class Page:
         object page_id
         object zones
         object letters
+        object pdf_has_text
 
     def __cinit__(self, File file, page_id):
         self.sdk = file.sdk
@@ -555,6 +564,11 @@ cdef class Page:
         cdef int iPage = page_id
         cdef RECERR rc = kRecLoadImg(self.sdk.sid, file.handle, &self.handle, iPage)
         CSDK.check_err(rc, 'kRecLoadImg')
+        cdef bool has_text
+        if file.is_pdf_doc:
+            rc = rPdfFileHasText(file.pdf_doc, iPage, &has_text)
+            if rc == 0:
+                self.pdf_has_text = has_text != 0
 
     def close(self):
         cdef RECERR rc
@@ -657,7 +671,7 @@ cdef class Page:
             rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
             CSDK.check_err(rc, 'kRecRemoveLines')
 
-    cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
+    cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions, REC_COLOR* pColors, dpi):
         code = self.sdk.convert_wchar_string_to_python_str(&letter[0].code, 1)
         if code == '':
             return None
@@ -715,11 +729,15 @@ cdef class Page:
         lang = lang_dict.get(letter[0].lang, None)
         lang2 = lang_dict.get(letter[0].lang2, None)
         dictionary_word = True if letter[0].info & 0x40000000 else False
+        fg_color = pColors[letter[0].ndxFGColor]
+        print('fg={}'.format(fg_color))
+        bg_color = pColors[letter[0].ndxBGColor]
+        print('bg={}'.format(bg_color))
         return Letter(letter[0].top, letter[0].left, letter[0].top + letter[0].height, letter[0].left + letter[0].width,
                       letter[0].capHeight * 100.0 / dpi,
                       letter[0].cellNum, letter[0].zone, code, space_type, nb_spaces, choices, suggestions,
                       lang, lang2, dictionary_word, confidence, word_suspicious,
-                      italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl)
+                      italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl, fg_color, bg_color)
 
     def recognize(self, timings=dict()):
         cdef RECERR rc
@@ -761,6 +779,12 @@ cdef class Page:
         cdef LONG nbSuggestions
         rc = kRecGetSuggestionStr(self.handle, &pSuggestions, &nbSuggestions)
         CSDK.check_err(rc, 'kRecGetSuggestionStr')
+        
+        # retrieve letter palette
+        cdef REC_COLOR* pColors
+        cdef LONG nbColors
+        rc = kRecGetLetterPalette(self.handle, &pColors, &nbColors)
+        CSDK.check_err(rc, 'kRecGetLetterPalette')
 
         # retrieve letters
         cdef LPLETTER pLetters
@@ -779,7 +803,7 @@ cdef class Page:
             for letter_id in range(nb_letters):
                 i_letter = letter_id
                 pLetter = pLetters + i_letter
-                letter = self.build_letter(pLetter, pChoices, pSuggestions, dpi_y)
+                letter = self.build_letter(pLetter, pChoices, pSuggestions, pColors, dpi_y)
                 if letter and letter.zone_id < len(self.zones):
                     self.letters.append(letter)
 
@@ -789,6 +813,8 @@ cdef class Page:
         rc = kRecFree(pChoices)
         CSDK.check_err(rc, 'kRecFree')
         rc = kRecFree(pSuggestions)
+        CSDK.check_err(rc, 'kRecFree')
+        rc = kRecFree(pColors)
         CSDK.check_err(rc, 'kRecFree')
 
     def get_image(self, image_index):
