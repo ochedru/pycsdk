@@ -405,7 +405,7 @@ cdef class File:
 class Letter:
     def __init__(self, top, left, bottom, right, font_size, cell_num, zone_id, code, space_type, nb_spaces,
                  choices, suggestions, lang, lang2, dictionary_word, confidence, word_suspicious, italic, bold,
-                 end_word, end_line, end_cell, end_row, in_cell, orientation, rtl, fg_color, bg_color):
+                 end_word, end_line, end_cell, end_row, in_cell, orientation, rtl):
         self.top = top
         self.left = left
         self.bottom = bottom
