@@ -671,7 +671,7 @@ cdef class Page:
             rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
             CSDK.check_err(rc, 'kRecRemoveLines')
 
-    cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions):
+    cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
         code = self.sdk.convert_wchar_string_to_python_str(&letter[0].code, 1)
         if code == '':
             return None
