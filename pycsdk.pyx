@@ -432,8 +432,6 @@ class Letter:
         self.in_cell = in_cell
         self.orientation = orientation
         self.rtl = rtl
-        self.fg_color = fg_color
-        self.bg_color = bg_color
 
     def __repr__(self):
         return pformat(vars(self))
