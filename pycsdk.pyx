@@ -216,7 +216,6 @@ cdef class CSDK:
         if license_file is not None and code is not None:
             CSDK.check_err(kRecSetLicense(license_file, code), 'kRecSetLicense')
         CSDK.check_err(RecInitPlus(company_name, product_name), 'RecInitPlus')
-        CSDK.check_err(rPdfInit(), 'rPdfInit')
 
         # create a settings collection for this CSDK instance
         self.sid = kRecCreateSettingsCollection(-1)
@@ -227,7 +226,6 @@ cdef class CSDK:
         self.set_setting('Kernel.DTxt.txt.LineBreak', '\n')
 
     def __dealloc__(self):
-        CSDK.check_err(rPdfQuit(), 'rPdfQuit')
         if self.sid != -1:
             CSDK.check_err(kRecDeleteSettingsCollection(self.sid), 'kRecDeleteSettingsCollection')
         CSDK.check_err(RecQuitPlus(), 'RecQuitPlus')
@@ -328,11 +326,11 @@ cdef class File:
     cdef public:
         object read_only
         object nb_pages
-        object is_pdf_doc
 
     def __cinit__(self, CSDK sdk, file_path, write_pdf = False):
         self.sdk = sdk
         self.handle = NULL
+        self.pdf_doc = NULL
         cdef RECERR rc
         cdef LPCTSTR pFilePath = file_path
         cdef int mode
@@ -354,11 +352,19 @@ cdef class File:
             rc = kRecGetImgFilePageCount(self.handle, &n)
             CSDK.check_err(rc, 'kRecGetImgFilePageCount')
         self.nb_pages = n
-        rc = rPdfOpen(pFilePath, NULL, &self.pdf_doc)
-        self.is_pdf_doc = rc == 0
+
+        # try to open this file as a PDF file
+        # do not check for error: if this succeeds, pdf_doc will be not NULL
+        CSDK.check_err(rPdfInit(), 'rPdfInit')
+        rPdfOpen(pFilePath, NULL, &self.pdf_doc)
 
     def close(self):
         cdef RECERR rc
+        if self.pdf_doc != NULL:
+            rc = rPdfClose(self.pdf_doc)
+            CSDK.check_err(rc, 'rPdfClose')
+        self.pdf_doc = NULL
+        CSDK.check_err(rPdfQuit(), 'rPdfQuit')
         if self.handle != NULL:
             rc = kRecCloseImgFile(self.handle)
             CSDK.check_err(rc, 'kRecCloseImgFile')
@@ -562,11 +568,11 @@ cdef class Page:
         cdef int iPage = page_id
         cdef RECERR rc = kRecLoadImg(self.sdk.sid, file.handle, &self.handle, iPage)
         CSDK.check_err(rc, 'kRecLoadImg')
-        cdef bool has_text
-        if file.is_pdf_doc:
+        cdef bool has_text = 0
+        if file.pdf_doc != NULL:
             rc = rPdfFileHasText(file.pdf_doc, iPage, &has_text)
-            if rc == 0:
-                self.pdf_has_text = has_text != 0
+            CSDK.check_err(rc, 'rPdfFileHasText')
+            self.pdf_has_text = has_text != 0
 
     def close(self):
         cdef RECERR rc
