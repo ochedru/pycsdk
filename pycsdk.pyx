@@ -386,7 +386,7 @@ cdef class File:
             raise NotImplementedError('not supported in read-write mode')
 
     # append an image to this output PDF file
-    def add_page(self, image, format):
+    def add_page(self, image_bytes):
         if self.read_only:
             raise CSDKException(msg='OmniPage: cannot add page to a read-only file')
 
@@ -397,7 +397,7 @@ cdef class File:
         cdef HPAGE hPage
         try:
             with tf:
-                image.save(tf, format)
+                tf.write(image_bytes)
             rc = kRecLoadImgF(self.sdk.sid, pFilePath, &hPage, 0)
             CSDK.check_err(rc, 'kRecLoadImgF')
             rc = kRecSaveImg(self.sdk.sid, self.handle, FF_PDF, hPage, II_ORIGINAL, 1)
