@@ -297,7 +297,7 @@ cdef class CSDK:
 
     def create_file(self, file_path):
         return File(self, file_path, write_pdf=True)
-    
+
     cdef convert_wchar_string_to_python_str(self, LPCWSTR pwch, DWORD length):
         cdef size_t buffer_length
         cdef RECERR rc
@@ -326,6 +326,7 @@ cdef class File:
     cdef public:
         object read_only
         object nb_pages
+        object is_pdf
 
     def __cinit__(self, CSDK sdk, file_path, write_pdf = False):
         self.sdk = sdk
@@ -357,6 +358,7 @@ cdef class File:
         # do not check for error: if this succeeds, pdf_doc will be not NULL
         CSDK.check_err(rPdfInit(), 'rPdfInit')
         rPdfOpen(pFilePath, NULL, &self.pdf_doc)
+        self.is_pdf = self.pdf_doc != NULL
 
     def close(self):
         cdef RECERR rc
@@ -403,7 +405,7 @@ cdef class File:
             rc = kRecSaveImg(self.sdk.sid, self.handle, FF_PDF, hPage, II_ORIGINAL, 1)
             CSDK.check_err(rc, 'kRecSaveImg')
             rc = kRecFreeImg(hPage)
-            CSDK.check_err(rc, 'kRecFreeImg')   
+            CSDK.check_err(rc, 'kRecFreeImg')
         finally:
             os.unlink(tf.name)
 
@@ -779,7 +781,7 @@ cdef class Page:
         cdef LONG nbSuggestions
         rc = kRecGetSuggestionStr(self.handle, &pSuggestions, &nbSuggestions)
         CSDK.check_err(rc, 'kRecGetSuggestionStr')
-        
+
         # retrieve letters
         cdef LPLETTER pLetters
         cdef LPCLETTER pLetter
