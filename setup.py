@@ -16,7 +16,7 @@ for root, dirs, files in os.walk(".", topdown=False):
 # build "pycsdk.so" python extension to be added to "PYTHONPATH" afterwards...
 setup(
     name='pycsdk',
-    version='20.3.7',
+    version='20.3.8',
     cmdclass={'build_ext': build_ext},
     ext_modules=[
         Extension("pycsdk",
