@@ -550,7 +550,8 @@ def _timing(timings, name):
         yield
     finally:
         duration = datetime.now() - started
-        timings[name] = duration.total_seconds()
+        if timings is not None:
+            timings[name] = duration.total_seconds()
 
 cdef class Page:
     cdef CSDK sdk
@@ -606,13 +607,13 @@ cdef class Page:
         cdef RECERR rc = kRecSetImgFlags(self.handle, IMG_FLAGS_CAMERAIMAGE, flag)
         CSDK.check_err(rc, 'kRecSetImgFlags')
 
-    def pre_process(self, timings = dict()):
+    def pre_process(self, timings=None):
         cdef RECERR rc
         with _timing(timings, 'ocr_preprocess_image'):
             rc = kRecPreprocessImg(self.sdk.sid, self.handle)
             CSDK.check_err(rc, 'kRecPreprocessImg')
 
-    def rotate(self, rotation, timings=dict()):
+    def rotate(self, rotation, timings=None):
         cdef RECERR rc
         cdef IMG_ROTATE img_rotate
         with _timing(timings, 'ocr_rotate_image'):
@@ -620,7 +621,7 @@ cdef class Page:
             rc = kRecRotateImg(self.sdk.sid, self.handle, img_rotate)
             CSDK.check_err(rc, 'kRecRotateImg')
 
-    def despeckle(self, despeckle_method, despeckle_level=None, timings=dict()):
+    def despeckle(self, despeckle_method, despeckle_level=None, timings=None):
         cdef RECERR rc
         cdef DESPECKLE_METHOD method
         cdef int level
@@ -665,17 +666,36 @@ cdef class Page:
         rot = preproc_info.Rotation
         return PreprocInfo(switcher.get(rot, 'UNKNOWN_{}'.format(rot)), preproc_info.Slope, matrix, flags)
 
-    def locate_zones(self, timings=dict()):
+    def locate_zones(self, timings=None):
         cdef RECERR rc
         with _timing(timings, 'ocr_locate_zones'):
             rc = kRecLocateZones(self.sdk.sid, self.handle)
             CSDK.check_err(rc, 'kRecLocateZones')
 
-    def remove_rule_lines(self, timings=dict()):
+    def remove_rule_lines(self, timings=None):
         cdef RECERR rc
         with _timing(timings, 'ocr_remove_rule_lines'):
             rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
             CSDK.check_err(rc, 'kRecRemoveLines')
+
+    def remove_borders(self, max_width, timings=None):
+        cdef RECERR rc
+        cdef UINT maxWidth = max_width
+        with _timing(timings, 'ocr_remove_borders'):
+            rc = kRecRemoveBorders(self.sdk.sid, self.handle, maxWidth)
+            CSDK.check_err(rc, 'kRecRemoveBorders')
+
+    def remove_punch_holes(self, timings=None):
+        cdef RECERR rc
+        cdef LPCRECT holes
+        cdef int nHoles
+        with _timing(timings, 'ocr_remove_punch_holes'):
+            rc = kRecRemovePunchHoles(self.sdk.sid, self.handle, NULL, 0, &holes, &nHoles, 1, 0, 0)
+            CSDK.check_err(rc, 'kRecRemovePunchHoles')
+            rc = kRecRemovePunchHoles(self.sdk.sid, self.handle, NULL, 0, &holes, &nHoles, 2, 0, 0)
+            CSDK.check_err(rc, 'kRecRemovePunchHoles')
+            rc = kRecFree(holes)
+            CSDK.check_err(rc, 'kRecFree')
 
     cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
         code = self.sdk.convert_wchar_string_to_python_str(&letter[0].code, 1)
@@ -741,7 +761,7 @@ cdef class Page:
                       lang, lang2, dictionary_word, confidence, word_suspicious,
                       italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl)
 
-    def recognize(self, timings=dict()):
+    def recognize(self, timings=None):
         cdef RECERR rc
         with _timing(timings, 'ocr_recognize'):
             rc = kRecRecognize(self.sdk.sid, self.handle, NULL)

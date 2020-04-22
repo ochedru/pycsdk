@@ -51,7 +51,7 @@ cpdef enum KRECMODULES:
     INFO_XOCR
     INFO_LFR
     INFO_ASP
-    INFO_SIZE 
+    INFO_SIZE
 cpdef enum PROCESSID:
     PID_IMGINPUT = 0
     PID_IMGSAVE
@@ -64,7 +64,7 @@ cpdef enum PROCESSID:
     PID_FORMATTING
     PID_WRITEFOUTDOC
     PID_CONVERTIMG
-    PID_SCANNER_WARMUP 
+    PID_SCANNER_WARMUP
 cpdef enum RETCODEINFO:
     RET_OK = 0
     RET_WARNING
@@ -292,7 +292,7 @@ cpdef enum IMG_FLAGS:
 cpdef enum RETAINCOLOR:
     RETAINCOLOR_NO
     RETAINCOLOR_YES
-    RETAINCOLOR_INVERTED 
+    RETAINCOLOR_INVERTED
 cpdef enum RLTYPES:
     LT_UNDEFINED
     LT_RULE
@@ -827,7 +827,7 @@ cdef extern from "recpdf.h":
     RECERR kRecUpdateImgFilePage(int sid, HPAGE hPage, IMAGEINDEX iiImg, HIMGFILE hIFile, int nPage, IMF_FORMAT format)
     RECERR kRecReplaceImgFilePage(int sid, HIMGFILE hIFileDst, int ndstPage, HIMGFILE hIFileSrc, int nsrcPage)
     RECERR kRecGetImgFilePageIndex(HIMGFILE hIFile, int *pIndex)
-    
+
     # image handling module
     # ---------------------
     ctypedef DWORD REC_COLOR
@@ -952,6 +952,8 @@ cdef extern from "recpdf.h":
     RECERR kRecConvertImg(int sid, HPAGE hPage, WORD BitsPerPixel, UINT flags)
     RECERR kRecLineRemoval(int sid, HPAGE hPage, const RECT *pRect)
     RECERR kRecRemoveLines(int sid, HPAGE hPage, IMAGEINDEX iiImg, const RECT *pRect)
+    RECERR kRecRemoveBorders(int sid, HPAGE hPage, UINT maxWidth)
+    RECERR kRecRemovePunchHoles(int sid, HPAGE hPage, LPCRECT ROIs, int nROIs, LPRECT* Holes, int* nHoles, UINT flags, UINT minDiameter, UINT maxDiameter);
     RECERR kRecGetLineCount(HPAGE hPage, int *pnLines)
     RECERR kRecGetLineInfo(HPAGE hPage, IMAGEINDEX iiImg, PRLINE pLine, int nLine)
     RECERR kRecGetFrameCount(HPAGE hPage, int *pnFrames)
@@ -1236,7 +1238,7 @@ cdef extern from "recpdf.h":
     RECERR kRecGetNextCodePage(LPTSTR pCodePageName, size_t buflen)
     RECERR kRecConvertCodePage2Unicode(int sid, const LPBYTE pChar, size_t *pBuffLen, LPWCH pUniCode)
     RECERR kRecConvertUnicode2CodePage(int sid, WCHAR UniCode, LPBYTE pChar, size_t *pBuffLen)
-        
+
     # direct TXT output converter module
     # ----------------------------------
     RECERR kRecSetDTXTFormat(int sid, DTXTOUTPUTFORMATS dFormat)
@@ -1277,7 +1279,7 @@ cdef extern from "recpdf.h":
     RECERR rPdfFileHasText(RPDF_DOC handle, size_t position, bool *bHasText)
     RECERR rPdfClose(RPDF_DOC handle)
 
-cdef extern from "RecApiPlus.h":  
+cdef extern from "RecApiPlus.h":
 
     # general service functions module
     # --------------------------------
@@ -1288,7 +1290,7 @@ cdef extern from "RecApiPlus.h":
     RECERR RecSetDefaultSettings(int sid)
     RECERR RecSetOCRThreadCount(int sid, int thCount)
     RECERR RecGetOCRThreadCount(int sid, int *thCount)
- 
+
     # simple multipage document handling module
     # -----------------------------------------
     ctypedef struct RECDOCSTRUCT:
@@ -1313,7 +1315,7 @@ cdef extern from "RecApiPlus.h":
     RECERR RecFormatPageStore(int sid, HPAGE hPage)
 
     # one step functions module
-    # -------------------------   
+    # -------------------------
     RECERR RecProcessPagesEx(int sid, LPCTSTR pDocFile, LPCTSTR *pImageFiles, LPONETOUCH_CB pCallback, void *pContext)
     RECERR RecGetRPPErrorList(RPPERRORS **rppErrs)
     RECERR RecExecuteWorkflow(int sid, LPCTSTR pWFfilename)
