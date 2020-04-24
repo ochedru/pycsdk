@@ -621,6 +621,17 @@ cdef class Page:
             rc = kRecRotateImg(self.sdk.sid, self.handle, img_rotate)
             CSDK.check_err(rc, 'kRecRotateImg')
 
+    def convert_to_bw(self, conversion, brightness, threshold, resolution_enhancement, timings=None):
+        cdef RECERR rc
+        cdef IMG_CONVERSION imgConversion
+        cdef IMG_RESENH imgResolutionEnhancement
+        cdef HPAGE
+        with _timing(timings, 'ocr_convert_bw'):
+            imgConversion = conversion
+            imgResolutionEnhancement = resolution_enhancement
+            rc = kRecConvertImg2BW(self.sdk.sid, self.handle, imgConversion, brightness, threshold, imgResolutionEnhancement, &self.handle)
+            CSDK.check_err(rc, 'kRecConvertImg2BW')
+
     def despeckle(self, despeckle_method, despeckle_level=None, timings=None):
         cdef RECERR rc
         cdef DESPECKLE_METHOD method
