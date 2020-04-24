@@ -632,6 +632,22 @@ cdef class Page:
             rc = kRecConvertImg2BW(self.sdk.sid, self.handle, imgConversion, brightness, threshold, imgResolutionEnhancement, &self.handle)
             CSDK.check_err(rc, 'kRecConvertImg2BW')
 
+    def erosion(self, type, timings=None):
+        cdef RECERR rc
+        cdef ERO_DIL_TYPE erosionType
+        with _timing(timings, 'ocr_erosion'):
+            erosionType = type
+            rc = kRecImgErosion(self.sdk.sid, self.handle, erosionType)
+            CSDK.check_err(rc, 'kRecImgErosion')
+
+    def dilatation(self, type, timings=None):
+        cdef RECERR rc
+        cdef ERO_DIL_TYPE dilatationType
+        with _timing(timings, 'ocr_dilatation'):
+            dilatationType = type
+            rc = kRecImgDilatation(self.sdk.sid, self.handle, dilatationType)
+            CSDK.check_err(rc, 'kRecImgDilatation')
+
     def despeckle(self, despeckle_method, despeckle_level=None, timings=None):
         cdef RECERR rc
         cdef DESPECKLE_METHOD method
@@ -698,7 +714,7 @@ cdef class Page:
 
     def remove_punch_holes(self, timings=None):
         cdef RECERR rc
-        cdef LPCRECT holes
+        cdef LPRECT holes
         cdef int nHoles
         with _timing(timings, 'ocr_remove_punch_holes'):
             rc = kRecRemovePunchHoles(self.sdk.sid, self.handle, NULL, 0, &holes, &nHoles, 1, 0, 0)
