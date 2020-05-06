@@ -699,11 +699,18 @@ cdef class Page:
             rc = kRecLocateZones(self.sdk.sid, self.handle)
             CSDK.check_err(rc, 'kRecLocateZones')
 
-    def remove_rule_lines(self, timings=None):
+    def remove_rule_lines(self, image_index, timings=None):
         cdef RECERR rc
+        cdef IMAGEINDEX img_index = image_index
         with _timing(timings, 'ocr_remove_rule_lines'):
-            rc = kRecRemoveLines(self.sdk.sid, self.handle, II_BW, NULL)
+            rc = kRecRemoveLines(self.sdk.sid, self.handle, img_index, NULL)
             CSDK.check_err(rc, 'kRecRemoveLines')
+
+    def line_removal(self, timings=None):
+        cdef RECERR rc
+        with _timing(timings, 'ocr_line_removal'):
+            rc = kRecLineRemoval(self.sdk.sid, self.handle, NULL)
+            CSDK.check_err(rc, 'kRecLineRemoval')
 
     def remove_borders(self, max_width, timings=None):
         cdef RECERR rc
