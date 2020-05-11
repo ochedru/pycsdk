@@ -613,6 +613,14 @@ cdef class Page:
             rc = kRecPreprocessImg(self.sdk.sid, self.handle)
             CSDK.check_err(rc, 'kRecPreprocessImg')
 
+    def is_blank(self, timings=None):
+        cdef RECERR rc
+        cdef INTBOOL blank_flag;
+        with _timing(timings, 'ocr_detect_blank_page'):
+            rc = kRecDetectBlankPage(self.sdk.sid, self.handle, &blank_flag)
+            CSDK.check_err(rc, 'kRecDetectBlankPage')
+        return False if blank_flag == 0 else True
+
     def rotate(self, rotation, timings=None):
         cdef RECERR rc
         cdef IMG_ROTATE img_rotate
@@ -625,12 +633,17 @@ cdef class Page:
         cdef RECERR rc
         cdef IMG_CONVERSION imgConversion
         cdef IMG_RESENH imgResolutionEnhancement
-        cdef HPAGE
         with _timing(timings, 'ocr_convert_bw'):
             imgConversion = conversion
             imgResolutionEnhancement = resolution_enhancement
             rc = kRecConvertImg2BW(self.sdk.sid, self.handle, imgConversion, brightness, threshold, imgResolutionEnhancement, &self.handle)
             CSDK.check_err(rc, 'kRecConvertImg2BW')
+
+    def enhance_whiteboard(self, timings=None):
+        cdef RECERR rc
+        with _timing(timings, 'ocr_enhance_whiteboard'):
+            rc = kRecEnhanceWhiteboardImg(self.handle)
+            CSDK.check_err(rc, 'kRecEnhanceWhiteboardImg')
 
     def erosion(self, type, timings=None):
         cdef RECERR rc

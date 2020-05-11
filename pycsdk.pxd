@@ -941,6 +941,7 @@ cdef extern from "recpdf.h":
     RECERR kRecSetImgPalette(HPAGE hPage, const BYTE *pPal)
     RECERR kRecGetImgPalette(int sid, HPAGE hPage, IMAGEINDEX iiImg, LPBYTE pPal)
     RECERR kRecDespeckleImg(int sid, HPAGE hPage)
+    RECERR kRecEnhanceWhiteboardImg(HPAGE hPage)
     RECERR kRecForceDespeckleImg(int sid, HPAGE hPage, LPCRECT pRect, DESPECKLE_METHOD method, int level)
     RECERR kRecImgErosion(int sid, HPAGE hPage, ERO_DIL_TYPE type)
     RECERR kRecImgDilatation(int sid, HPAGE hPage, ERO_DIL_TYPE type)
