@@ -413,7 +413,7 @@ cdef class File:
 class Letter:
     def __init__(self, top, left, bottom, right, font_size, cell_num, zone_id, code, space_type, nb_spaces,
                  choices, suggestions, lang, lang2, dictionary_word, confidence, word_suspicious, italic, bold,
-                 end_word, end_line, end_cell, end_row, in_cell, orientation, rtl):
+                 monospaced, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl):
         self.top = top
         self.left = left
         self.bottom = bottom
@@ -433,6 +433,7 @@ class Letter:
         self.word_suspicious = word_suspicious
         self.italic = italic
         self.bold = bold
+        self.monospaced = monospaced
         self.end_word = end_word
         self.end_line = end_line
         self.end_cell = end_cell
@@ -786,6 +787,7 @@ cdef class Page:
             confidence = 100 - err
         italic = True if letter[0].fontAttrib & 0x0002 else False
         bold = True if letter[0].fontAttrib & 0x0008 else False
+        monospaced = True if letter[0].fontAttrib & 0x0080 else False
         end_word = True if letter[0].makeup & 0x0004 else False
         end_line = True if letter[0].makeup & 0x0001 else False
         end_cell = True if letter[0].makeup & 0x0020 else False
@@ -806,7 +808,7 @@ cdef class Page:
                       letter[0].capHeight * 100.0 / dpi,
                       letter[0].cellNum, letter[0].zone, code, space_type, nb_spaces, choices, suggestions,
                       lang, lang2, dictionary_word, confidence, word_suspicious,
-                      italic, bold, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl)
+                      italic, bold, monospaced, end_word, end_line, end_cell, end_row, in_cell, orientation, rtl)
 
     def recognize(self, timings=None):
         cdef RECERR rc
