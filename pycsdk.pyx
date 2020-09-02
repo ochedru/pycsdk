@@ -319,6 +319,14 @@ cdef class CSDK:
         finally:
             free(buffer)
 
+    def set_mrc_compression_settings_from_level(self, compression_level, compression_tradeoff):
+        cdef RECERR rc
+        rc = kRecSetCompressionLevel(self.sid, 0)
+        CSDK.check_err(rc, 'kRecSetCompressionLevel')
+        rc = kRecSetMRCCompressionSettingsFromLevel(self.sid, compression_level, compression_tradeoff)
+        CSDK.check_err(rc, 'kRecSetMRCCompressionSettingsFromLevel')
+
+
 cdef class File:
     cdef CSDK sdk
     cdef HIMGFILE handle
