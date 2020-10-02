@@ -7,12 +7,8 @@ import tempfile
 import time
 from PIL import Image
 from contextlib import contextmanager
-from cpython.float cimport
-
-PyFloat_FromDouble
-from libc.stdlib cimport
-
-malloc, free
+from cpython.float cimport PyFloat_FromDouble
+from libc.stdlib cimport malloc, free
 from pprint import pformat
 
 
