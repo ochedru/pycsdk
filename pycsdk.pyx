@@ -4,12 +4,17 @@
 
 import os
 import tempfile
-from cpython.float cimport PyFloat_FromDouble
+import time
 from PIL import Image
-from pprint import pformat
 from contextlib import contextmanager
-from datetime import datetime
-from libc.stdlib cimport malloc, free
+from cpython.float cimport
+
+PyFloat_FromDouble
+from libc.stdlib cimport
+
+malloc, free
+from pprint import pformat
+
 
 class TwoWayDict(dict):
     def __setitem__(self, key, value):
@@ -265,7 +270,7 @@ cdef class CSDK:
         CSDK.check_err(kRecSettingGetHandle(NULL, setting_name, &setting, &hasSetting), 'kRecSettingGetHandle')
         if hasSetting == 0:
             raise CSDKException(msg='OmniPage: unknown setting "{}"'.format(setting_name))
-        cdef const WCHAR* setting_value
+        cdef const WCHAR*setting_value
         CSDK.check_err(kRecSettingGetUString(self.sid, setting, &setting_value), 'kRecSettingGetUString');
         length = 0
         while setting_value[length] != 0:
@@ -325,7 +330,6 @@ cdef class CSDK:
         CSDK.check_err(rc, 'kRecSetCompressionLevel')
         rc = kRecSetMRCCompressionSettingsFromLevel(self.sid, compression_level, compression_tradeoff)
         CSDK.check_err(rc, 'kRecSetMRCCompressionSettingsFromLevel')
-
 
 cdef class File:
     cdef CSDK sdk
@@ -509,8 +513,10 @@ class Cell:
 
 cdef build_cell(LPCCELL_INFO cell):
     return Cell(cell[0].rect.top, cell[0].rect.left, cell[0].rect.bottom, cell[0].rect.right,
-                zone_type(cell[0].type), cell[0].cellcolor, cell[0].lcolor, cell[0].tcolor, cell[0].rcolor, cell[0].bcolor,
-                line_style(cell[0].lstyle), line_style(cell[0].tstyle), line_style(cell[0].rstyle), line_style(cell[0].bstyle),
+                zone_type(cell[0].type), cell[0].cellcolor, cell[0].lcolor, cell[0].tcolor, cell[0].rcolor,
+                cell[0].bcolor,
+                line_style(cell[0].lstyle), line_style(cell[0].tstyle), line_style(cell[0].rstyle),
+                line_style(cell[0].bstyle),
                 cell[0].lwidth, cell[0].twidth, cell[0].rwidth, cell[0].bwidth)
 
 
@@ -555,13 +561,16 @@ class ImageInfo:
 
 @contextmanager
 def _timing(timings, name):
-    started = datetime.now()
+    started = time.time()
     try:
         yield
     finally:
-        duration = datetime.now() - started
         if timings is not None:
-            timings[name] = duration.total_seconds()
+            dur = max(time.time() - started, 0)
+            if name in timings:
+                timings[name] = timings[name] + dur
+            else:
+                timings[name] = dur
 
 cdef class Page:
     cdef CSDK sdk
@@ -646,7 +655,8 @@ cdef class Page:
         with _timing(timings, 'ocr_convert_bw'):
             imgConversion = conversion
             imgResolutionEnhancement = resolution_enhancement
-            rc = kRecConvertImg2BW(self.sdk.sid, self.handle, imgConversion, brightness, threshold, imgResolutionEnhancement, &self.handle)
+            rc = kRecConvertImg2BW(self.sdk.sid, self.handle, imgConversion, brightness, threshold,
+                                   imgResolutionEnhancement, &self.handle)
             CSDK.check_err(rc, 'kRecConvertImg2BW')
 
     def enhance_whiteboard(self, timings=None):
