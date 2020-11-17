@@ -760,6 +760,12 @@ cdef class Page:
             rc = kRecFree(holes)
             CSDK.check_err(rc, 'kRecFree')
 
+    def invert_images(self, timings=None):
+        cdef RECERR rc
+        with _timing(timings, 'ocr_invert'):
+            rc = kRecInvertImgArea(self.sdk.sid, self.handle, NULL)
+            CSDK.check_err(rc, 'kRecInvertImgArea')
+
     cdef build_letter(self, LPCLETTER letter, LPWCH pChoices, LPWCH pSuggestions, dpi):
         code = self.sdk.convert_wchar_string_to_python_str(&letter[0].code, 1)
         if code == '':
