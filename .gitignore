@@ -5,3 +5,4 @@ build
 pycsdk.c
 
 /.idea
+venv
